@@ -1,0 +1,21 @@
+name: ai-project
+
+# for creating a virtual environment includes all the project's dependencies:
+# install conda.
+# use: conda env update -f environment.yml
+# activate the environment (everytime): conda activate ai-project
+
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - ipython
+  - jupyter
+  - jupyterlab
+  - matplotlib
+  - numpy
+  - pandas
+  - python=3.9
+  - pip
+  - pip:
+      - sklearn
