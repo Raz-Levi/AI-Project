@@ -15,5 +15,5 @@ class LearningAlgorithm(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def predict(self, sample: TestSamples, given_feature: list[int], maximal_cost: float) -> int:
+    def predict(self, sample: TestSamples, given_features: list[int], maximal_cost: float) -> int:
         ...
