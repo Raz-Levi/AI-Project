@@ -9,8 +9,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from typing import Callable, Iterator
+from dataclasses import dataclass
 
 """"""""""""""""""""""""""""""""""" Definitions and Consts """""""""""""""""""""""""""""""""""
+
+Sample = np.ndarray
+TestSamples = np.ndarray
+
+
+@dataclass
+class TrainSamples:
+    samples: np.ndarray
+    classes: np.ndarray
 
 
 """"""""""""""""""""""""""""""""""""""""""" Methods """""""""""""""""""""""""""""""""""""""""""
