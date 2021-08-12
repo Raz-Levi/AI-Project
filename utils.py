@@ -7,6 +7,7 @@ Utils For The Project
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import sklearn
 
 from typing import Callable, Iterator
 from dataclasses import dataclass
@@ -76,3 +77,7 @@ def print_graph(x_values: list, y_values: list, x_label: str, y_label: str):
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.show()
+
+
+def complete_features(sample: Sample, given_features) -> Sample:
+    pass

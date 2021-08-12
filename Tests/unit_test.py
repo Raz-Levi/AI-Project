@@ -5,8 +5,10 @@ Automation Tests For The Project
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 import unittest
 from utils import *
+from sklearn import neighbors
 
 from abstract_algorithm import LearningAlgorithm
+from naive_algorithm import EmptyAlgorithm, RandomAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""" Tests  """""""""""""""""""""""""""""""""""""""""
 
@@ -90,6 +92,25 @@ class TestLearningAlgorithm(unittest.TestCase):
         simple_algorithm = SimpleAlgorithm()
         self.assertTrue(simple_algorithm.predict(sample=np.ndarray([1]), given_feature=[1], maximal_cost=1))
 
+
+class TestNaiveAlgorithm(unittest.TestCase):
+    # tests functions
+    def test_initializations(self):
+        self.assertTrue(self._test_initialization(EmptyAlgorithm))
+        # self.assertTrue(self._test_initialization(RandomAlgorithm))
+
+    # private functions
+    @staticmethod
+    def _get_consts():
+        return {
+            "learning_algorithm": sklearn.neighbors.KNeighborsClassifier(n_neighbors=3),
+        }
+
+    @staticmethod
+    def _test_initialization(tested_algorithm) -> bool:
+        consts = TestNaiveAlgorithm._get_consts()
+        algorithm = tested_algorithm(learning_algorithm=consts["learning_algorithm"])
+        return type(algorithm) == EmptyAlgorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit, '__call__')
 
 if __name__ == '__main__':
     unittest.main()
