@@ -129,8 +129,8 @@ class TestLearningAlgorithm(unittest.TestCase):
     @staticmethod
     def _get_consts():
         return {
-            "test_sample": np.ndarray([1]),
-            "train_samples": TrainSamples(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [0, 1, 2]]).T, np.ndarray([1, 1, 1, 1])),
+            "test_sample": np.array([1]),
+            "train_samples": TrainSamples(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [0, 1, 2]]).T, np.array([1, 1, 1, 1])),
             "given_feature": [1],
             "total_features_num": 3,
             "features_costs": [1],

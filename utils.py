@@ -20,14 +20,14 @@ TestSamples = np.array
 
 @dataclass
 class TrainSamples:
-    samples: np.array
-    classes: np.array
+    samples: np.array  # Training data- shape (n_samples, n_features), i.e samples are in the rows.
+    classes: np.array  # Target values- shape (n_samples,).
 
 
 """"""""""""""""""""""""""""""""""""""""""" Methods """""""""""""""""""""""""""""""""""""""""""
 
 
-def get_samples_from_csv(path: str, preprocess: Callable = None) -> np.ndarray:
+def get_samples_from_csv(path: str, preprocess: Callable = None) -> np.array:
     """
     get samples from csv as np.ndarray. notice that the first row (titles) are being ignored.
     :param path: string that contains the path for the csv.
@@ -47,7 +47,7 @@ def get_samples_from_csv(path: str, preprocess: Callable = None) -> np.ndarray:
     return np.array(samples)
 
 
-def get_generator_for_samples_in_csv(path: str, preprocess: Callable = None) -> Iterator[np.ndarray]:
+def get_generator_for_samples_in_csv(path: str, preprocess: Callable = None) -> Iterator[np.array]:
     """
         get generator[np.ndarray] for samples in csv. notice that the first row (titles) are being ignored.
         :param path: string that contains the path for the csv.
@@ -79,20 +79,23 @@ def print_graph(x_values: list, y_values: list, x_label: str, y_label: str):
     plt.show()
 
 
-def complete_features(sample: Sample, given_features: list[int], total_features_num: int, default_value: float = np.inf) -> Sample:
+def complete_features(samples: Sample, given_features: list[int], total_features_num: int, default_value: float = np.inf) -> Sample:
     """
-    expand a given sample to size total_features_num by placing default_value in all the places which are not in given_features.
+    expand each of the given samples to size total_features_num by placing default_value in all the places which are not in given_features.
     sample has to be arranged according to given_features- the function sets the first value in sample to the first
     index in given_features in the new expanded sample.
     given_features isn't required to be sorted.
     total_features_num has to be equal or above than the size of sample and given_features.
-    :param sample: given sample for expanding.
+    :param samples: given sample for expanding.
     :param given_features: list of the indices of the chosen features.
     :param total_features_num: the number to be expanded to.
     :param default_value: the default value to place in all the places which are not in given_features. default value is inf.
     :return expanded sample.
     """
-    expanded_sample = [default_value for _ in range(total_features_num)]
-    for feature_idx, feature_value in zip(given_features, sample):
-        expanded_sample[feature_idx] = feature_value
-    return np.array(expanded_sample)
+    expanded_samples = []
+    for sample in samples:
+        expanded_sample = [default_value for _ in range(total_features_num)]
+        for feature_idx, feature_value in zip(given_features, sample):
+            expanded_sample[feature_idx] = feature_value
+        expanded_samples.append(expanded_sample)
+    return np.array(expanded_samples)
