@@ -55,21 +55,21 @@ class TestUtils(unittest.TestCase):
 
     def test_complete_features(self):
         consts = self._get_consts()
-        self.assertTrue(np.array_equal(complete_features(sample=consts["sample"],
+        self.assertTrue(np.array_equal(complete_features(samples=consts["sample"],
                                                          given_features=consts["given_features"],
                                                          total_features_num=consts["total_features_num"]),
                                        consts["completed_features_inf"]))
-        self.assertTrue(np.array_equal(complete_features(sample=consts["sample"],
+        self.assertTrue(np.array_equal(complete_features(samples=consts["sample"],
                                                          given_features=consts["given_features"],
                                                          total_features_num=consts["total_features_num"],
                                                          default_value=consts["default_value"]),
                                        consts["completed_features_zero"]))
-        self.assertTrue(np.array_equal(complete_features(sample=consts["sample"],
+        self.assertTrue(np.array_equal(complete_features(samples=consts["sample"],
                                                          given_features=consts["given_features_not_sorted"],
                                                          total_features_num=consts["total_features_num"],
                                                          default_value=consts["default_value"]),
                                        consts["completed_features_not_sorted"]))
-        self.assertTrue(np.array_equal(complete_features(sample=consts["full_sample"],
+        self.assertTrue(np.array_equal(complete_features(samples=consts["full_sample"],
                                                          given_features=consts["given_features_full"],
                                                          total_features_num=consts["total_features_num"]),
                                        consts["completed_features_full"]))
@@ -82,18 +82,18 @@ class TestUtils(unittest.TestCase):
             "full_expected_matrix": [[0.2, 0.11, 0.05], [1., 3.6, 5.4], [1., 2., 0.]],
             "changed_row_expected_matrix": [[0.2, 0.11, 0.05], [1., -3.6, -5.4], [1., -2., 0.]],
             "removed_row_expected_matrix": [[1., 3.6, 5.4], [1., 2., 0.]],
-            "sample": np.array([2, 2, 2]),
+            "sample": np.array([[2, 2, 2]]),
             "classes": np.array([1]),
-            "full_sample": [0, 1, 2, 3, 4, 5, 6],
+            "full_sample": np.array([[0, 1, 2, 3, 4, 5, 6]]),
             "given_features": np.array([2, 4, 6]),
             "given_features_not_sorted": np.array([6, 0, 2]),
             "given_features_full": np.array([5, 1, 2, 0, 6, 4, 3]),
             "total_features_num": 7,
             "default_value": 0,
-            "completed_features_inf": np.array([np.inf, np.inf, 2, np.inf, 2, np.inf, 2]),
-            "completed_features_zero": np.array([0, 0, 2, 0, 2, 0, 2]),
-            "completed_features_not_sorted": np.array([2, 0, 2, 0, 0, 0, 2]),
-            "completed_features_full": np.array([3, 1, 2, 6, 5, 0, 4])
+            "completed_features_inf": np.array([[np.inf, np.inf, 2, np.inf, 2, np.inf, 2]]),
+            "completed_features_zero": np.array([[0, 0, 2, 0, 2, 0, 2]]),
+            "completed_features_not_sorted": np.array([[2, 0, 2, 0, 0, 0, 2]]),
+            "completed_features_full": np.array([[3, 1, 2, 6, 5, 0, 4]])
         }
 
     def _compare_generator_to_matrix(self, matrix, expected_matrix):
@@ -130,7 +130,7 @@ class TestLearningAlgorithm(unittest.TestCase):
     def _get_consts():
         return {
             "test_sample": np.array([1]),
-            "train_samples": TrainSamples(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [0, 1, 2]]).T, np.array([1, 1, 1, 1])),
+            "train_samples": TrainSamples(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [0, 1, 2]]), np.array([1, 1, 1, 1])),
             "given_feature": [1],
             "total_features_num": 3,
             "features_costs": [1],
