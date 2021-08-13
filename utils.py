@@ -81,16 +81,17 @@ def print_graph(x_values: list, y_values: list, x_label: str, y_label: str):
 
 def complete_features(samples: Sample, given_features: list[int], total_features_num: int, default_value: float = np.inf) -> Sample:
     """
-    expand each of the given samples to size total_features_num by placing default_value in all the places which are not in given_features.
-    sample has to be arranged according to given_features- the function sets the first value in sample to the first
+    expands each of the given samples to size total_features_num by placing default_value in all the places which are
+    not in given_features.
+    samples has to be arranged according to given_features- the function sets the first value in sample to the first
     index in given_features in the new expanded sample.
     given_features isn't required to be sorted.
     total_features_num has to be equal or above than the size of sample and given_features.
-    :param samples: given sample for expanding.
+    :param samples: given samples for expanding.
     :param given_features: list of the indices of the chosen features.
     :param total_features_num: the number to be expanded to.
     :param default_value: the default value to place in all the places which are not in given_features. default value is inf.
-    :return expanded sample.
+    :return expanded sample of shape (n_samples, total_features_num).
     """
     expanded_samples = []
     for sample in samples:
