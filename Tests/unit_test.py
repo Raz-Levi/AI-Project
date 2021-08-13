@@ -140,8 +140,11 @@ class TestLearningAlgorithm(unittest.TestCase):
     @staticmethod
     def _get_instance():
         class SimpleAlgorithm(LearningAlgorithm):
-            def _fit(self, train_samples: TrainSamples, features_costs: list[float]):
-                pass
+            def __init__(self):
+                self._total_features_num = None
+
+            def fit(self, train_samples: TrainSamples, features_costs: list[float]):
+                self._total_features_num = train_samples.samples.shape[1]
 
             def predict(self, sample: TestSamples, given_feature: list[int], maximal_cost: float) -> int:
                 return True
@@ -158,18 +161,34 @@ class TestNaiveAlgorithm(unittest.TestCase):
         self.assertTrue(self._test_initialization(EmptyAlgorithm))
         # self.assertTrue(self._test_initialization(RandomAlgorithm))
 
+    def test_empty_algorithm(self):
+        consts = self._get_consts()
+        empty_algorithm = EmptyAlgorithm(learning_algorithm=consts["learning_algorithm"])
+        empty_algorithm.fit(train_samples=consts["train_samples"], features_costs=consts["features_costs"])
+
+        predicted_sample = empty_algorithm.predict(samples=consts["train_samples"].samples, given_features=[0, 1, 2], maximal_cost=consts["maximal_cost"])
+        self.assertTrue(np.array_equal(predicted_sample, consts["train_samples"].classes))
+
+        predicted_sample = empty_algorithm.predict(samples=consts["test_sample_missed_feature"], given_features=[0, 1], maximal_cost=consts["maximal_cost"])
+        self.assertTrue(np.array_equal(predicted_sample.item(), consts["train_samples"].classes[0]))
+
     # private functions
     @staticmethod
     def _get_consts():
         return {
-            "learning_algorithm": sklearn.neighbors.KNeighborsClassifier(n_neighbors=3),
+            "learning_algorithm": sklearn.neighbors.KNeighborsClassifier(n_neighbors=1),
+            "train_samples": TrainSamples(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [0, 1, 2]]), np.array([0, 1, 0, 1])),
+            "features_costs": [1, 2, 3],
+            "maximal_cost": 10,
+            "test_sample_missed_feature": np.array([[1, 2]])
         }
 
     @staticmethod
     def _test_initialization(tested_algorithm) -> bool:
         consts = TestNaiveAlgorithm._get_consts()
         algorithm = tested_algorithm(learning_algorithm=consts["learning_algorithm"])
-        return type(algorithm) == EmptyAlgorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit, '__call__')
+        return type(algorithm) == tested_algorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit, '__call__')
+
 
 if __name__ == '__main__':
     unittest.main()

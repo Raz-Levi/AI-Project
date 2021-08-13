@@ -49,13 +49,13 @@ def get_samples_from_csv(path: str, preprocess: Callable = None) -> np.array:
 
 def get_generator_for_samples_in_csv(path: str, preprocess: Callable = None) -> Iterator[np.array]:
     """
-        get generator[np.ndarray] for samples in csv. notice that the first row (titles) are being ignored.
-        :param path: string that contains the path for the csv.
-        :param preprocess: (optional) function for preprocess the data. the function can change the values by reference,
-                            can change by value (the function should return specific sample), or can remove sample due to a
-                            condition (the function should return []).
-        :return: generator[np.ndarray] for the samples.
-        """
+    get generator[np.ndarray] for samples in csv. notice that the first row (titles) are being ignored.
+    :param path: string that contains the path for the csv.
+    :param preprocess: (optional) function for preprocess the data. the function can change the values by reference,
+                        can change by value (the function should return specific sample), or can remove sample due to a
+                        condition (the function should return []).
+    :return: generator[np.ndarray] for the samples.
+    """
     data_frame = pd.read_csv(filepath_or_buffer=path, sep=",")
     for row in data_frame.values:
         sample = list(row)
@@ -79,6 +79,7 @@ def print_graph(x_values: list, y_values: list, x_label: str, y_label: str):
     plt.show()
 
 
+# deprecated
 def complete_features(samples: Sample, given_features: list[int], total_features_num: int, default_value: float = np.inf) -> Sample:
     """
     expands each of the given samples to size total_features_num by placing default_value in all the places which are
