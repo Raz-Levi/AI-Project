@@ -5,3 +5,4 @@
 .idea/inspectionProfiles/profiles_settings.xml
 .idea/AI-Project.iml
 .pytest_cache
+.DS_Store
