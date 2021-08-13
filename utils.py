@@ -14,14 +14,14 @@ from dataclasses import dataclass
 
 """"""""""""""""""""""""""""""""""" Definitions and Consts """""""""""""""""""""""""""""""""""
 
-Sample = np.ndarray
-TestSamples = np.ndarray
+Sample = np.array
+TestSamples = np.array
 
 
 @dataclass
 class TrainSamples:
-    samples: np.ndarray
-    classes: np.ndarray
+    samples: np.array
+    classes: np.array
 
 
 """"""""""""""""""""""""""""""""""""""""""" Methods """""""""""""""""""""""""""""""""""""""""""
@@ -79,5 +79,20 @@ def print_graph(x_values: list, y_values: list, x_label: str, y_label: str):
     plt.show()
 
 
-def complete_features(sample: Sample, given_features) -> Sample:
-    pass
+def complete_features(sample: Sample, given_features: list[int], total_features_num: int, default_value: float = np.inf) -> Sample:
+    """
+    expand a given sample to size total_features_num by placing default_value in all the places which are not in given_features.
+    sample has to be arranged according to given_features- the function sets the first value in sample to the first
+    index in given_features in the new expanded sample.
+    given_features isn't required to be sorted.
+    total_features_num has to be equal or above than the size of sample and given_features.
+    :param sample: given sample for expanding.
+    :param given_features: list of the indices of the chosen features.
+    :param total_features_num: the number to be expanded to.
+    :param default_value: the default value to place in all the places which are not in given_features. default value is inf.
+    :return expanded sample.
+    """
+    expanded_sample = [default_value for _ in range(total_features_num)]
+    for feature_idx, feature_value in zip(given_features, sample):
+        expanded_sample[feature_idx] = feature_value
+    return np.array(expanded_sample)
