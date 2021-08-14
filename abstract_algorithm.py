@@ -30,6 +30,6 @@ class LearningAlgorithm(abc.ABC):
         :param samples: test samples of shape (n_samples, n_features), i.e samples are in the rows.
         :param given_features: list of the indices of the chosen features.
         :param maximal_cost: the maximum available cost for buying features.
-        :return: np.array of shape (n_samples,) contains the class labels for each data sample.
+        :return: Classes of shape (n_samples,) contains the class labels for each data sample.
         """
         ...
