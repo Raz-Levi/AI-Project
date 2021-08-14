@@ -168,24 +168,10 @@ class TestNaiveAlgorithm(unittest.TestCase):
         self.assertTrue(self._test_naive_algorithm(EmptyAlgorithm)[0])
 
     def test_random_algorithm(self):
-        consts = self._get_consts()
-        common_tests_result, random_algorithm = self._test_naive_algorithm(RandomAlgorithm)
-        self.assertTrue(common_tests_result)
-
-        predicted_sample = random_algorithm.predict(samples=consts["train_samples"].samples,
-                                                    given_features=consts["given_features_empty"],
-                                                    maximal_cost=consts["maximal_cost_partially"])
-        self.assertTrue(np.array_equal(predicted_sample, consts["train_samples"].classes))
+        self.assertTrue(self._test_sequence_algorithm(RandomAlgorithm)[0])
 
     def test_optimal_algorithm(self):
-        consts = self._get_consts()
-        common_tests_result, optimal_algorithm = self._test_naive_algorithm(OptimalAlgorithm)
-        self.assertTrue(common_tests_result)
-
-        predicted_sample = optimal_algorithm.predict(samples=consts["train_samples"].samples,
-                                                    given_features=consts["given_features_empty"],
-                                                    maximal_cost=consts["maximal_cost_partially"])
-        self.assertTrue(np.array_equal(predicted_sample, consts["train_samples"].classes))
+        self.assertTrue(self._test_sequence_algorithm(OptimalAlgorithm)[0])
 
     # private functions
     @staticmethod
@@ -230,6 +216,16 @@ class TestNaiveAlgorithm(unittest.TestCase):
         predicted_sample = algorithm.predict(samples=consts["train_samples"].samples,
                                              given_features=consts["given_features_missed"],
                                              maximal_cost=consts["maximal_cost"])
+        test_result = test_result and np.array_equal(predicted_sample, consts["train_samples"].classes)
+        return test_result, algorithm
+
+    @staticmethod
+    def _test_sequence_algorithm(tested_algorithm) -> Tuple[bool, LearningAlgorithm]:
+        consts = TestNaiveAlgorithm._get_consts()
+        test_result, algorithm = TestNaiveAlgorithm._test_naive_algorithm(tested_algorithm)
+        predicted_sample = algorithm.predict(samples=consts["train_samples"].samples,
+                                             given_features=consts["given_features_empty"],
+                                             maximal_cost=consts["maximal_cost_partially"])
         test_result = test_result and np.array_equal(predicted_sample, consts["train_samples"].classes)
         return test_result, algorithm
 
