@@ -140,7 +140,7 @@ class TestLearningAlgorithm(unittest.TestCase):
         }
 
     @staticmethod
-    def _get_instance():
+    def _get_instance() -> LearningAlgorithm:
         class SimpleAlgorithm(LearningAlgorithm):
             def __init__(self):
                 self._total_features_num = None
