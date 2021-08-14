@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sklearn
 
+import abc
 from typing import Callable, Iterator
 from dataclasses import dataclass
 
@@ -16,12 +17,13 @@ from dataclasses import dataclass
 
 Sample = np.array
 TestSamples = np.array
+Classes = np.array
 
 
 @dataclass
 class TrainSamples:
     samples: np.array  # Training data- shape (n_samples, n_features), i.e samples are in the rows.
-    classes: np.array  # Target values- shape (n_samples,).
+    classes: Classes  # Target values- shape (n_samples,).
 
 
 """"""""""""""""""""""""""""""""""""""""""" Methods """""""""""""""""""""""""""""""""""""""""""

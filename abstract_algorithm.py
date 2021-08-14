@@ -3,7 +3,6 @@ This module defines an abstract algorithm class.
 """
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
-import abc
 from utils import *
 
 """"""""""""""""""""""""""""""""""""""""""" Class """""""""""""""""""""""""""""""""""""""""""
@@ -26,7 +25,7 @@ class LearningAlgorithm(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def predict(self, samples: TestSamples, given_features: list[int], maximal_cost: float) -> np.array:
+    def predict(self, samples: TestSamples, given_features: list[int], maximal_cost: float) -> Classes:
         """
         An abstract method for predicting the class labels for the provided data.
         :param samples: test samples of shape (n_samples, n_features), i.e samples are in the rows.
