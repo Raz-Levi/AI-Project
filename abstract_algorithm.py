@@ -15,8 +15,7 @@ class LearningAlgorithm(abc.ABC):
     @abc.abstractmethod
     def fit(self, train_samples: TrainSamples, features_costs: list[float]):
         """
-        An abstract method for training the classifier. the function saves the number of the features in training dataset and calls to an abstract
-        fit method.
+        An abstract method for training the classifier.
         :param train_samples: training dataset contains training data of shape (n_samples, n_features), i.e samples are
         in the rows, and target values of shape (n_samples,).
         :param features_costs: list in length number of features that contains the costs of each feature according to
