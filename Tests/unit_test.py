@@ -6,9 +6,10 @@ Automation Tests For The Project
 import unittest
 from utils import *
 from sklearn import neighbors
+from typing import Tuple
 
 from abstract_algorithm import LearningAlgorithm
-from naive_algorithm import EmptyAlgorithm, RandomAlgorithm
+from naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""" Tests  """""""""""""""""""""""""""""""""""""""""
 
@@ -76,7 +77,7 @@ class TestUtils(unittest.TestCase):
 
     # private functions
     @staticmethod
-    def _get_consts():
+    def _get_consts() -> dict:
         return {
             "csv_path": "test_csv_functions.csv",
             "full_expected_matrix": [[0.2, 0.11, 0.05], [1., 3.6, 5.4], [1., 2., 0.]],
@@ -127,10 +128,11 @@ class TestLearningAlgorithm(unittest.TestCase):
 
     # private functions
     @staticmethod
-    def _get_consts():
+    def _get_consts() -> dict:
         return {
             "test_sample": np.array([1]),
-            "train_samples": TrainSamples(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [0, 1, 2]]), np.array([1, 1, 1, 1])),
+            "train_samples": TrainSamples(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [0, 1, 2]]),
+                                          np.array([1, 1, 1, 1])),
             "given_feature": [1],
             "total_features_num": 3,
             "features_costs": [1],
@@ -149,7 +151,7 @@ class TestLearningAlgorithm(unittest.TestCase):
             def predict(self, sample: TestSamples, given_feature: list[int], maximal_cost: float) -> int:
                 return True
 
-            def _get_total_features_num(self):
+            def _get_total_features_num(self) -> int:
                 return self._total_features_num
 
         return SimpleAlgorithm()
@@ -159,35 +161,77 @@ class TestNaiveAlgorithm(unittest.TestCase):
     # tests functions
     def test_initializations(self):
         self.assertTrue(self._test_initialization(EmptyAlgorithm))
-        # self.assertTrue(self._test_initialization(RandomAlgorithm))
+        self.assertTrue(self._test_initialization(RandomAlgorithm))
+        self.assertTrue(self._test_initialization(OptimalAlgorithm))
 
-    def test_empty_algorithm(self):
+    def test_algorithms(self):
+        self.assertTrue(self._test_naive_algorithm(EmptyAlgorithm)[0])
+
+    def test_random_algorithm(self):
         consts = self._get_consts()
-        empty_algorithm = EmptyAlgorithm(learning_algorithm=consts["learning_algorithm"])
-        empty_algorithm.fit(train_samples=consts["train_samples"], features_costs=consts["features_costs"])
+        common_tests_result, random_algorithm = self._test_naive_algorithm(RandomAlgorithm)
+        self.assertTrue(common_tests_result)
 
-        predicted_sample = empty_algorithm.predict(samples=consts["train_samples"].samples, given_features=[0, 1, 2], maximal_cost=consts["maximal_cost"])
+        predicted_sample = random_algorithm.predict(samples=consts["train_samples"].samples,
+                                                    given_features=consts["given_features_empty"],
+                                                    maximal_cost=consts["maximal_cost_partially"])
         self.assertTrue(np.array_equal(predicted_sample, consts["train_samples"].classes))
 
-        predicted_sample = empty_algorithm.predict(samples=consts["test_sample_missed_feature"], given_features=[0, 1], maximal_cost=consts["maximal_cost"])
-        self.assertTrue(np.array_equal(predicted_sample.item(), consts["train_samples"].classes[0]))
+    def test_optimal_algorithm(self):
+        consts = self._get_consts()
+        common_tests_result, optimal_algorithm = self._test_naive_algorithm(OptimalAlgorithm)
+        self.assertTrue(common_tests_result)
+
+        predicted_sample = optimal_algorithm.predict(samples=consts["train_samples"].samples,
+                                                    given_features=consts["given_features_empty"],
+                                                    maximal_cost=consts["maximal_cost_partially"])
+        self.assertTrue(np.array_equal(predicted_sample, consts["train_samples"].classes))
 
     # private functions
     @staticmethod
-    def _get_consts():
+    def _get_consts() -> dict:
         return {
             "learning_algorithm": sklearn.neighbors.KNeighborsClassifier(n_neighbors=1),
-            "train_samples": TrainSamples(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [0, 1, 2]]), np.array([0, 1, 0, 1])),
-            "features_costs": [1, 2, 3],
+            "train_samples": TrainSamples(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [0, 1, 2]]),
+                                          np.array([0, 1, 0, 1])),
+            "features_costs": [1, 5, 2],
             "maximal_cost": 10,
-            "test_sample_missed_feature": np.array([[1, 2]])
+            "maximal_cost_zero": 0,
+            "maximal_cost_partially": 4,
+            "given_features_full": [0, 1, 2],
+            "given_features_missed": [0, 1],
+            "given_features_empty": []
         }
 
     @staticmethod
     def _test_initialization(tested_algorithm) -> bool:
         consts = TestNaiveAlgorithm._get_consts()
         algorithm = tested_algorithm(learning_algorithm=consts["learning_algorithm"])
-        return type(algorithm) == tested_algorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit, '__call__')
+        return type(algorithm) == tested_algorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit,
+                                                                                                          '__call__')
+
+    @staticmethod
+    def _test_naive_algorithm(tested_algorithm) -> Tuple[bool, LearningAlgorithm]:
+        consts = TestNaiveAlgorithm._get_consts()
+        algorithm = tested_algorithm(learning_algorithm=consts["learning_algorithm"])
+        test_result = type(algorithm) == tested_algorithm
+        algorithm.fit(train_samples=consts["train_samples"], features_costs=consts["features_costs"])
+
+        predicted_sample = algorithm.predict(samples=consts["train_samples"].samples,
+                                             given_features=consts["given_features_full"],
+                                             maximal_cost=consts["maximal_cost"])
+        test_result = test_result and np.array_equal(predicted_sample, consts["train_samples"].classes)
+
+        predicted_sample = algorithm.predict(samples=np.array([consts["train_samples"].samples[0]]),
+                                             given_features=consts["given_features_missed"],
+                                             maximal_cost=consts["maximal_cost"])
+        test_result = test_result and np.array_equal(predicted_sample.item(), consts["train_samples"].classes[0])
+
+        predicted_sample = algorithm.predict(samples=consts["train_samples"].samples,
+                                             given_features=consts["given_features_missed"],
+                                             maximal_cost=consts["maximal_cost"])
+        test_result = test_result and np.array_equal(predicted_sample, consts["train_samples"].classes)
+        return test_result, algorithm
 
 
 if __name__ == '__main__':
