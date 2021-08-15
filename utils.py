@@ -48,18 +48,20 @@ def print_graph(x_values: list, y_values: list, x_label: str, y_label: str):
     plt.show()
 
 
-def get_samples_from_csv(path: str, preprocess: Callable = None, **kw) -> np.array:
+def get_samples_from_csv(path: str, preprocess: Callable = None, include_first_column: bool = True, **kw) -> np.array:
     """
     get samples from csv as np.ndarray. notice that the first row (titles) are being ignored.
     :param path: string that contains the path for the csv.
     :param preprocess: (optional) function for preprocess the data. the function can change the values by reference,
                         can change by value (the function should return specific sample), or can remove sample due to a
                         condition (the function should return []).
+    :param include_first_column: if True, the first column of the dataset is included. if False, the first column of the
+    dataset is not included.
     :return: samples as np.ndarray.
     """
     samples, data_frame = [], pd.read_csv(filepath_or_buffer=path, sep=",")
     for example in data_frame.values:
-        sample = list(example)
+        sample = list(example) if include_first_column else list(example)[1:]
         if preprocess is not None:
             processed_sample = preprocess(sample, **kw)
             sample = sample if processed_sample is None else processed_sample
@@ -68,18 +70,20 @@ def get_samples_from_csv(path: str, preprocess: Callable = None, **kw) -> np.arr
     return np.array(samples)
 
 
-def get_generator_for_samples_in_csv(path: str, preprocess: Callable = None, **kw) -> Iterator[np.array]:
+def get_generator_for_samples_in_csv(path: str, preprocess: Callable = None, include_first_column: bool = True, **kw) -> Iterator[np.array]:
     """
     get generator[np.ndarray] for samples in csv. notice that the first row (titles) are being ignored.
     :param path: string that contains the path for the csv.
     :param preprocess: (optional) function for preprocess the data. the function can change the values by reference,
                         can change by value (the function should return specific sample), or can remove sample due to a
                         condition (the function should return []).
+    :param include_first_column: if True, the first column of the dataset is included. if False, the first column of the
+    dataset is not included.
     :return: generator[np.ndarray] for the samples.
     """
     data_frame = pd.read_csv(filepath_or_buffer=path, sep=",")
     for row in data_frame.values:
-        sample = list(row)
+        sample = list(row) if include_first_column else list(row)[1:]
         if preprocess is not None:
             sample = preprocess(sample, **kw)
         if sample:
@@ -87,7 +91,11 @@ def get_generator_for_samples_in_csv(path: str, preprocess: Callable = None, **k
 
 
 def categorical_to_numeric(sample: Sample, categories: dict):
-    print(sample)
+    """
+    Preprocess for samples- the alphabetic features will be converted to numerical features.
+    :param sample: the sample for converting.
+    :param categories: a dictionary that contains the converted features and their numerical values.
+    """
     for feature_num in range(len(sample)):
         if not is_number(sample[feature_num]):
             if sample[feature_num] not in categories.keys():

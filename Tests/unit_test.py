@@ -46,13 +46,17 @@ class TestUtils(unittest.TestCase):
         self._compare_generator_to_matrix(matrix_generator, consts["removed_row_expected_matrix"])
 
     def test_categorical_to_numeric(self):
-        consts = self._get_consts()
-        # categories = {f'categories_{feature_num}': 0 for feature_num in range(matrix.shape[1])}
-        categories = {}
-        print("\n")
+        consts, categories = self._get_consts(), {}
         matrix = get_samples_from_csv(consts["csv_with_strings_path"], categorical_to_numeric, categories=categories)
-        print("\n")
-        print(matrix)
+        self.assertTrue(np.array_equal(matrix, consts["csv_strings_expected_matrix"]))
+
+        categories = {}
+        matrix = get_samples_from_csv(consts["csv_few_samples"], categorical_to_numeric, categories=categories)
+        self.assertTrue(np.array_equal(matrix, consts["csv_samples_expected_matrix"]))
+
+        categories = {}
+        matrix = get_samples_from_csv(consts["csv_few_samples"], categorical_to_numeric, False, categories=categories)
+        self.assertTrue(np.array_equal(matrix, consts["csv_samples_no_column_expected_matrix"]))
 
     def test_declarations(self):
         consts = self._get_consts()
@@ -89,9 +93,13 @@ class TestUtils(unittest.TestCase):
         return {
             "csv_path": "test_csv_functions.csv",
             "csv_with_strings_path": "test_csv_with_strings.csv",
+            "csv_few_samples": "test_csv_few_samples.csv",
             "full_expected_matrix": [[0.2, 0.11, 0.05], [1., 3.6, 5.4], [1., 2., 0.]],
             "changed_row_expected_matrix": [[0.2, 0.11, 0.05], [1., -3.6, -5.4], [1., -2., 0.]],
             "removed_row_expected_matrix": [[1., 3.6, 5.4], [1., 2., 0.]],
+            "csv_strings_expected_matrix": np.array([[0.2, 0., 0.05, 0., 0., 0.], [1., 0., 5.4, 1., 0., 1.], [1., 1., 0., 0., 1., 1.]]),
+            "csv_samples_expected_matrix": np.array([[0, 0, 0, 13, 0, 0, 460, 3, 4, 0], [1, 0, 1, 25, 1, 1, 235, 3, 2, 0], [2, 1, 0, 26, 1, 1, 1142, 2, 2, 1]]),
+            "csv_samples_no_column_expected_matrix": np.array([[0, 0, 13, 0, 0, 460, 3, 4, 0], [0, 1, 25, 1, 1, 235, 3, 2, 0], [1, 0, 26, 1, 1, 1142, 2, 2, 1]]),
             "sample": np.array([[2, 2, 2]]),
             "classes": np.array([1]),
             "full_sample": np.array([[0, 1, 2, 3, 4, 5, 6]]),

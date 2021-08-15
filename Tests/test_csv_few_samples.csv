@@ -1,0 +1,4 @@
+,Gender,customer_type,age,type_of_travel,customer_class,flight_distance,inflight_wifi_service,departure_arrival_time_convenient,satisfaction
+0,Male,Loyal Customer,13,Personal Travel,Eco Plus,460,3,4,neutral or dissatisfied
+1,Male,disloyal Customer,25,Business travel,Business,235,3,2,neutral or dissatisfied
+2,Female,Loyal Customer,26,Business travel,Business,1142,2,2,satisfied
