@@ -6,7 +6,6 @@ Automation Tests For The Project
 import unittest
 from utils import *
 from sklearn import neighbors
-from typing import Tuple
 
 from abstract_algorithm import LearningAlgorithm
 from naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
@@ -46,6 +45,15 @@ class TestUtils(unittest.TestCase):
                                                             self._pre_process_function_remove_first_row)
         self._compare_generator_to_matrix(matrix_generator, consts["removed_row_expected_matrix"])
 
+    def test_categorical_to_numeric(self):
+        consts = self._get_consts()
+        # categories = {f'categories_{feature_num}': 0 for feature_num in range(matrix.shape[1])}
+        categories = {}
+        print("\n")
+        matrix = get_samples_from_csv(consts["csv_with_strings_path"], categorical_to_numeric, categories=categories)
+        print("\n")
+        print(matrix)
+
     def test_declarations(self):
         consts = self._get_consts()
         sample = consts["sample"]
@@ -80,6 +88,7 @@ class TestUtils(unittest.TestCase):
     def _get_consts() -> dict:
         return {
             "csv_path": "test_csv_functions.csv",
+            "csv_with_strings_path": "test_csv_with_strings.csv",
             "full_expected_matrix": [[0.2, 0.11, 0.05], [1., 3.6, 5.4], [1., 2., 0.]],
             "changed_row_expected_matrix": [[0.2, 0.11, 0.05], [1., -3.6, -5.4], [1., -2., 0.]],
             "removed_row_expected_matrix": [[1., 3.6, 5.4], [1., 2., 0.]],
