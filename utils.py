@@ -108,10 +108,6 @@ def categorical_to_numeric(sample: Sample, categories: dict):
                 sample[feature_num] = categories[sample[feature_num]]
 
 
-def get_dataset(path: str, train_ratio: float = 0.7, preprocess: Callable = None) -> Tuple[TrainSamples, TestSamples]:
-    pass
-
-
 def is_number(value: str) -> bool:
     """
     Returns if value is number or not. number is considered whole number or fraction. exponent is not considered as number.
@@ -119,6 +115,14 @@ def is_number(value: str) -> bool:
     :return: True if value is number, False otherwise.
     """
     return type(value) == int or type(value) == float or (type(value) == str and value.replace('.', '', 1).isnumeric())
+
+
+def get_dataset(path: str, class_index: int, train_ratio: float = 0.25, include_first_column: bool = True, random_seed: int = None) -> Tuple[TrainSamples, TestSamples]:
+    categories = {}
+    samples, classes = get_samples_from_csv(path, class_index, categorical_to_numeric, include_first_column, categories=categories)  # TODO: add class_index to get_samples_from_csv
+    train_samples, train_classes, test_samples, test_classes = sklearn.model_selection.train_test_split(
+        samples, classes, test_size=train_ratio, random_state=random_seed, shuffle=True if type(random_seed) == int else False)
+    return TrainSamples(train_samples, train_classes), TestSamples(test_samples, test_classes)
 
 
 # deprecated
