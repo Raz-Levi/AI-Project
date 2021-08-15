@@ -3,26 +3,33 @@ This module defines an abstract algorithm class.
 """
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
-import abc
 from utils import *
 
 """"""""""""""""""""""""""""""""""""""""""" Class """""""""""""""""""""""""""""""""""""""""""
 
 
 class LearningAlgorithm(abc.ABC):
-    def __init__(self):
-        self._total_features_num = None
-
-    ### Public Methods ###
-    def fit(self, train_samples: TrainSamples, features_costs: list[float]):
-        self._total_features_num = train_samples.samples.shape[0]
-        self._fit(train_samples, features_costs)
-
+    """
+    An abstract class for LearningAlgorithm.
+    """
     @abc.abstractmethod
-    def predict(self, sample: TestSamples, given_features: list[int], maximal_cost: float) -> int:
+    def fit(self, train_samples: TrainSamples, features_costs: list[float]):
+        """
+        An abstract method for training the classifier.
+        :param train_samples: training dataset contains training data of shape (n_samples, n_features), i.e samples are
+        in the rows, and target values of shape (n_samples,).
+        :param features_costs: list in length number of features that contains the costs of each feature according to
+        indices. in first index you will find the cost of the first feature, etc.
+        """
         ...
 
-    ### Private Methods ###
     @abc.abstractmethod
-    def _fit(self, train_samples: TrainSamples, features_costs: list[float]):
+    def predict(self, samples: TestSamples, given_features: list[int], maximal_cost: float) -> Classes:
+        """
+        An abstract method for predicting the class labels for the provided data.
+        :param samples: test samples of shape (n_samples, n_features), i.e samples are in the rows.
+        :param given_features: list of the indices of the chosen features.
+        :param maximal_cost: the maximum available cost for buying features.
+        :return: Classes of shape (n_samples,) contains the class labels for each data sample.
+        """
         ...
