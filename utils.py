@@ -106,7 +106,6 @@ def complete_features(samples: Sample, given_features: list[int], total_features
         expanded_samples.append(expanded_sample)
     return np.array(expanded_samples)
 
-
 def normalize_data(data):
     return pre.normalize(data, axis=0)
 
