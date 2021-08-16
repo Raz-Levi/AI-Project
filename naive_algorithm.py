@@ -31,7 +31,7 @@ class EmptyAlgorithm(LearningAlgorithm):
         :param train_samples: training dataset contains training data of shape (n_samples, n_features), i.e samples are
         in the rows, and target values of shape (n_samples,). the function saves it.
         :param features_costs: list in length number of features that contains the costs of each feature according to
-        indices. in first index you will find the cost of the first feature, etc. the function ignores it.
+        indices. in first index you will find the cost of the first feature, etc.
         """
         self._train_samples = train_samples
 
