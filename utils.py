@@ -84,7 +84,8 @@ def print_graph(x_values: list, y_values: list, x_label: str, y_label: str):
 
 
 # deprecated
-def complete_features(samples: Sample, given_features: list[int], total_features_num: int, default_value: float = np.inf) -> Sample:
+def complete_features(samples: Sample, given_features: list[int], total_features_num: int,
+                      default_value: float = np.inf) -> Sample:
     """
     expands each of the given samples to size total_features_num by placing default_value in all the places which are
     not in given_features.
@@ -105,6 +106,7 @@ def complete_features(samples: Sample, given_features: list[int], total_features
             expanded_sample[feature_idx] = feature_value
         expanded_samples.append(expanded_sample)
     return np.array(expanded_samples)
+
 
 def normalize_data(data):
     return pre.normalize(data, axis=0)

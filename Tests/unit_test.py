@@ -110,7 +110,7 @@ class TestUtils(unittest.TestCase):
         data = normalize_data(consts["corr_matrix"])
         costs_list = consts["costs_list"]
         res = score_function_a(data, [2], 1, 0, costs_list, alpha=1)
-        self.assertEqual(1/2, res)
+        self.assertEqual(1 / 2, res)
         res = score_function_a(data, [1, 2], 3, 0, costs_list, alpha=2)
         self.assertEqual(0.5502954390354358, res)
 
@@ -123,7 +123,6 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(1, res)
         res = score_function_b(data, [1, 0], 1, 3, costs_list, learning_algo=learner)
         self.assertEqual(0.5, res)
-
 
     # private functions
     @staticmethod
@@ -162,6 +161,7 @@ class TestUtils(unittest.TestCase):
     @staticmethod
     def _pre_process_function_remove_first_row(row: np.ndarray):
         return [] if row[0] == 0.2 else row
+
 
 class TestLearningAlgorithm(unittest.TestCase):
     def test_initialization(self):
@@ -279,6 +279,7 @@ class TestNaiveAlgorithm(unittest.TestCase):
                                              maximal_cost=consts["maximal_cost_partially"])
         test_result = test_result and np.array_equal(predicted_sample, consts["train_samples"].classes)
         return test_result, algorithm
+
 
 if __name__ == '__main__':
     unittest.main()
