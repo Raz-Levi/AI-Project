@@ -4,7 +4,9 @@ Automation Tests For The Project
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 import unittest
+import typing
 from utils import *
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn import neighbors
 from typing import Tuple
 
@@ -75,6 +77,53 @@ class TestUtils(unittest.TestCase):
                                                          total_features_num=consts["total_features_num"]),
                                        consts["completed_features_full"]))
 
+    def test_get_correlation_to_feature(self):
+        consts = self._get_consts()
+        data = normalize_data(consts["corr_matrix"])
+        corr = get_correlation_to_feature(data, 0, 1)
+        self.assertEqual(1, corr)
+        corr = get_correlation_to_feature(data, 0, 2)
+        self.assertEqual(0, corr)
+
+    def test_get_correlation_to_other_features(self):
+        consts = self._get_consts()
+        data = normalize_data(consts["corr_matrix"])
+        corr = get_correlation_to_other_features(data, [1, 2], 0)
+        self.assertEqual(0.5, corr)
+
+    def test_get_price_score(self):
+        consts = self._get_consts()
+        costs_list = consts["costs_list"]
+        self.assertEqual(1, get_price_score(0, costs_list))
+        self.assertEqual(2, get_price_score(1, costs_list))
+
+    def test_get_get_certainty(self):
+        consts = self._get_consts()
+        data = normalize_data(consts["corr_matrix"])
+        learner = KNeighborsClassifier(1)
+        res = get_certainty(data, 3, [0, 1], 2, learner)
+        self.assertEqual(1, res)
+        res = get_certainty(data, 3, [2, 1], 0, learner)
+
+    def test_score_function_a(self):
+        consts = self._get_consts()
+        data = normalize_data(consts["corr_matrix"])
+        costs_list = consts["costs_list"]
+        res = score_function_a(data, [2], 1, 0, costs_list, alpha=1)
+        self.assertEqual(1 / 2, res)
+        res = score_function_a(data, [1, 2], 3, 0, costs_list, alpha=2)
+        self.assertEqual(0.5502954390354358, res)
+
+    def test_score_function_b(self):
+        consts = self._get_consts()
+        data = normalize_data(consts["corr_matrix"])
+        costs_list = consts["costs_list"]
+        learner = KNeighborsClassifier(1)
+        res = score_function_b(data, [1, 2], 0, 3, costs_list, learning_algo=learner)
+        self.assertEqual(1, res)
+        res = score_function_b(data, [1, 0], 1, 3, costs_list, learning_algo=learner)
+        self.assertEqual(0.5, res)
+
     # private functions
     @staticmethod
     def _get_consts() -> dict:
@@ -83,6 +132,8 @@ class TestUtils(unittest.TestCase):
             "full_expected_matrix": [[0.2, 0.11, 0.05], [1., 3.6, 5.4], [1., 2., 0.]],
             "changed_row_expected_matrix": [[0.2, 0.11, 0.05], [1., -3.6, -5.4], [1., -2., 0.]],
             "removed_row_expected_matrix": [[1., 3.6, 5.4], [1., 2., 0.]],
+            "corr_matrix": [[1, 2, 3, 0], [-2, -4, -6, 0], [3, 6, -5, 1]],
+            "costs_list": [1, 2, 3, 4],
             "sample": np.array([[2, 2, 2]]),
             "classes": np.array([1]),
             "full_sample": np.array([[0, 1, 2, 3, 4, 5, 6]]),
