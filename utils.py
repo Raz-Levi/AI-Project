@@ -1,6 +1,7 @@
 """
 Utils For The Project
 """
+import math
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 
@@ -171,14 +172,16 @@ def score_function_a(dataset, features, feature, target, costs_list, alpha=1):
     """
     return the feature score according to the theory we explain in the PDF.
     """
-    return (get_correlation_to_feature(dataset, target, feature) +
-            alpha * get_correlation_to_other_features(dataset, features, feature)) / get_price_score(feature,
-                                                                                                     costs_list)
+    price = get_price_score(feature, costs_list)
+    frac = (get_correlation_to_feature(dataset, target, feature) /
+            alpha * get_correlation_to_other_features(dataset, features, feature))
+    return frac / price
 
 
 def score_function_b(dataset, features, feature, target, costs_list, learning_algo=None):
     """
     return the feature score according to the theory we explain in the PDF.
     """
-    return get_certainty(dataset, target, features, feature, learning_algo) / get_price_score(feature,
-                                                                                              costs_list)
+    certainty = get_certainty(dataset, target, features, feature, learning_algo)
+    price = get_price_score(feature, costs_list)
+    return certainty / price

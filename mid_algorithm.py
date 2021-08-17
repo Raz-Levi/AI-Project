@@ -34,9 +34,9 @@ class MaxVarianceAlgorithm(LearningAlgorithm):
         """
         self._train_samples = train_samples
         self._features_costs = features_costs
-        correlations = np.var(train_samples, axis=0)
+        correlations = np.var(train_samples.samples, axis=0)
         args_sort = np.argsort(correlations)
-        self._features_by_corr = args_sort.reverse()
+        self._features_by_corr = np.array(args_sort[::-1]).tolist()
 
     def predict(self, samples: TestSamples, given_features: list[int], maximal_cost: float) -> Classes:
         """
@@ -61,8 +61,10 @@ class MaxVarianceAlgorithm(LearningAlgorithm):
         """
         new_given_features = given_features
         available_features = list(set(range(self._train_samples.samples.shape[1])) - set(given_features))
-        while len(available_features) and maximal_cost:
+        while len(self._features_by_corr) and len(self._features_by_corr) and maximal_cost:
             chosen_feature = self._features_by_corr.pop()
+            if chosen_feature not in available_features:
+                break
             if self._features_costs[chosen_feature] > maximal_cost:
                 break
             maximal_cost -= self._features_costs[chosen_feature]

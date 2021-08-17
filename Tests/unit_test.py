@@ -1,6 +1,7 @@
 """
 Automation Tests For The Project
 """
+from mid_algorithm import MaxVarianceAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 import unittest
@@ -110,9 +111,9 @@ class TestUtils(unittest.TestCase):
         data = normalize_data(consts["corr_matrix"])
         costs_list = consts["costs_list"]
         res = score_function_a(data, [2], 1, 0, costs_list, alpha=1)
-        self.assertEqual(1 / 2, res)
+        self.assertEqual(0, res)
         res = score_function_a(data, [1, 2], 3, 0, costs_list, alpha=2)
-        self.assertEqual(0.5502954390354358, res)
+        self.assertEqual(0.07012591041294361, res)
 
     def test_score_function_b(self):
         consts = self._get_consts()
@@ -214,6 +215,7 @@ class TestNaiveAlgorithm(unittest.TestCase):
         self.assertTrue(self._test_initialization(EmptyAlgorithm))
         self.assertTrue(self._test_initialization(RandomAlgorithm))
         self.assertTrue(self._test_initialization(OptimalAlgorithm))
+        self.assertTrue(self._test_initialization(MaxVarianceAlgorithm))
 
     def test_algorithms(self):
         self.assertTrue(self._test_naive_algorithm(EmptyAlgorithm)[0])
@@ -223,6 +225,9 @@ class TestNaiveAlgorithm(unittest.TestCase):
 
     def test_optimal_algorithm(self):
         self.assertTrue(self._test_sequence_algorithm(OptimalAlgorithm)[0])
+
+    def test_mid_algorithm(self):
+        self.assertTrue(self._test_mid_algorithm(MaxVarianceAlgorithm)[0])
 
     # private functions
     @staticmethod
@@ -276,6 +281,16 @@ class TestNaiveAlgorithm(unittest.TestCase):
         test_result, algorithm = TestNaiveAlgorithm._test_naive_algorithm(tested_algorithm)
         predicted_sample = algorithm.predict(samples=consts["train_samples"].samples,
                                              given_features=consts["given_features_empty"],
+                                             maximal_cost=consts["maximal_cost_partially"])
+        test_result = test_result and np.array_equal(predicted_sample, consts["train_samples"].classes)
+        return test_result, algorithm
+
+    @staticmethod
+    def _test_mid_algorithm(tested_algorithm) -> Tuple[bool, LearningAlgorithm]:
+        consts = TestNaiveAlgorithm._get_consts()
+        test_result, algorithm = TestNaiveAlgorithm._test_naive_algorithm(tested_algorithm)
+        predicted_sample = algorithm.predict(samples=consts["train_samples"].samples,
+                                             given_features=consts["given_features_missed"],
                                              maximal_cost=consts["maximal_cost_partially"])
         test_result = test_result and np.array_equal(predicted_sample, consts["train_samples"].classes)
         return test_result, algorithm
