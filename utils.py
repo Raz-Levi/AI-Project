@@ -1,7 +1,6 @@
 """
 Utils For The Project
 """
-import math
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 
@@ -10,7 +9,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sklearn.preprocessing as pre
 import scipy.stats as stats
-import sklearn
 
 import abc
 from typing import Callable, Iterator

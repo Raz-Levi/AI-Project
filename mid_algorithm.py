@@ -4,12 +4,13 @@ This module contains a partially sophisticated algorithm
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 from utils import *
-from abstract_algorithm import LearningAlgorithm
+from naive_algorithm import SequenceAlgorithm
+import sklearn
 
 """"""""""""""""""""""""""""""""""""""""""" Classes """""""""""""""""""""""""""""""""""""""""""
 
 
-class MaxVarianceAlgorithm(LearningAlgorithm):
+class MaxVarianceAlgorithm(SequenceAlgorithm):
     """
     A partially sophisticated algorithm that choose to buy the feature with the most variance in each stage.
     """
@@ -18,7 +19,7 @@ class MaxVarianceAlgorithm(LearningAlgorithm):
         Init function.
         :param learning_algorithm: sklearn's classifier. the function saves it and uses it later.
         """
-        super().__init__()
+        super().__init__(learning_algorithm)
         self._train_samples = None
         self._features_costs = None
         self._features_by_corr = None
