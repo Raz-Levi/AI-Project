@@ -4,14 +4,13 @@ Automation Tests For The Project
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 import unittest
-import typing
 from utils import *
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn import neighbors
 from typing import Tuple
 
 from abstract_algorithm import LearningAlgorithm
 from naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
+from mid_algorithm import MaxVarianceAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""" Tests  """""""""""""""""""""""""""""""""""""""""
 
@@ -110,9 +109,9 @@ class TestUtils(unittest.TestCase):
         data = normalize_data(consts["corr_matrix"])
         costs_list = consts["costs_list"]
         res = score_function_a(data, [2], 1, 0, costs_list, alpha=1)
-        self.assertEqual(1 / 2, res)
+        self.assertEqual(0, res)
         res = score_function_a(data, [1, 2], 3, 0, costs_list, alpha=2)
-        self.assertEqual(0.5502954390354358, res)
+        self.assertEqual(consts["score"], res)
 
     def test_score_function_b(self):
         consts = self._get_consts()
@@ -145,7 +144,8 @@ class TestUtils(unittest.TestCase):
             "completed_features_inf": np.array([[np.inf, np.inf, 2, np.inf, 2, np.inf, 2]]),
             "completed_features_zero": np.array([[0, 0, 2, 0, 2, 0, 2]]),
             "completed_features_not_sorted": np.array([[2, 0, 2, 0, 0, 0, 2]]),
-            "completed_features_full": np.array([[3, 1, 2, 6, 5, 0, 4]])
+            "completed_features_full": np.array([[3, 1, 2, 6, 5, 0, 4]]),
+            "score": 0.07012591041294361
         }
 
     def _compare_generator_to_matrix(self, matrix, expected_matrix):
@@ -214,6 +214,7 @@ class TestNaiveAlgorithm(unittest.TestCase):
         self.assertTrue(self._test_initialization(EmptyAlgorithm))
         self.assertTrue(self._test_initialization(RandomAlgorithm))
         self.assertTrue(self._test_initialization(OptimalAlgorithm))
+        self.assertTrue(self._test_initialization(MaxVarianceAlgorithm))
 
     def test_algorithms(self):
         self.assertTrue(self._test_naive_algorithm(EmptyAlgorithm)[0])
@@ -224,11 +225,14 @@ class TestNaiveAlgorithm(unittest.TestCase):
     def test_optimal_algorithm(self):
         self.assertTrue(self._test_sequence_algorithm(OptimalAlgorithm)[0])
 
+    def test_mid_algorithm(self):
+        self.assertTrue(self._test_mid_algorithm(MaxVarianceAlgorithm)[0])
+
     # private functions
     @staticmethod
     def _get_consts() -> dict:
         return {
-            "learning_algorithm": sklearn.neighbors.KNeighborsClassifier(n_neighbors=1),
+            "learning_algorithm": KNeighborsClassifier(n_neighbors=1),
             "train_samples": TrainSamples(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [0, 1, 2]]),
                                           np.array([0, 1, 0, 1])),
             "features_costs": [1, 5, 2],
@@ -276,6 +280,16 @@ class TestNaiveAlgorithm(unittest.TestCase):
         test_result, algorithm = TestNaiveAlgorithm._test_naive_algorithm(tested_algorithm)
         predicted_sample = algorithm.predict(samples=consts["train_samples"].samples,
                                              given_features=consts["given_features_empty"],
+                                             maximal_cost=consts["maximal_cost_partially"])
+        test_result = test_result and np.array_equal(predicted_sample, consts["train_samples"].classes)
+        return test_result, algorithm
+
+    @staticmethod
+    def _test_mid_algorithm(tested_algorithm) -> Tuple[bool, LearningAlgorithm]:
+        consts = TestNaiveAlgorithm._get_consts()
+        test_result, algorithm = TestNaiveAlgorithm._test_naive_algorithm(tested_algorithm)
+        predicted_sample = algorithm.predict(samples=consts["train_samples"].samples,
+                                             given_features=consts["given_features_missed"],
                                              maximal_cost=consts["maximal_cost_partially"])
         test_result = test_result and np.array_equal(predicted_sample, consts["train_samples"].classes)
         return test_result, algorithm
