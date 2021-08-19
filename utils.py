@@ -12,7 +12,7 @@ import sklearn.preprocessing as pre
 import scipy.stats as stats
 
 import abc
-from typing import Callable, Iterator, Tuple
+from typing import Callable, Tuple
 from dataclasses import dataclass
 
 """"""""""""""""""""""""""""""""""" Definitions and Consts """""""""""""""""""""""""""""""""""
@@ -50,29 +50,21 @@ def print_graph(x_values: list, y_values: list, x_label: str, y_label: str):
     plt.show()
 
 
-def get_samples_from_csv(path: str, class_index: int = 0, include_first_column: bool = True, preprocess: Callable = None, **kw) -> Tuple[np.array, Classes]:
+def get_samples_from_csv(path: str, class_index: int = 0, preprocess: Callable = None, **kw) -> Tuple[np.array, Classes]:
     """
     get samples and classes from csv as np.array. notice that the first row (titles) are being ignored.
     :param path: string that contains the path for the csv.
     :param class_index: the index of the class in the sample. for default, the class will be at the first place.
-    :param include_first_column: if True, the first column of the dataset is included. if False, the first column of the
-        dataset is ignored. for default, the first column is included.
-    :param preprocess: (optional) function for preprocess the data. the function can change the values by reference,
-        by value (the function should return specific sample), or can remove sample due to a condition (in such case the
-        function should return []).
+    :param preprocess: (optional) function for preprocess the data. the function runs over the rows and may change the
+        data by reference, by value (the function should return specific sample), or can remove sample due to a condition
+        (in such case the function should return []).
     :return: tuple of samples and class, both are as np.array.
     """
-    samples, classes, data_frame = [], [], pd.read_csv(filepath_or_buffer=path, sep=",")
-    for example in data_frame.values:
-        sample = list(example) if include_first_column else list(example)[1:]
-        if preprocess is not None:
-            processed_sample = preprocess(sample, **kw)
-            sample = sample if processed_sample is None else processed_sample
-        if sample:
-            classes.append(sample[class_index])
-            del sample[class_index]
-            samples.append(sample)
-    return np.array(samples), np.array(classes)
+    dataset = pd.read_csv(filepath_or_buffer=path, sep=",").to_numpy()
+    if preprocess is not None:
+        np.apply_along_axis(preprocess, 1, dataset, **kw)
+    complementary_list = list(get_complementary_numbers(dataset.shape[1], [class_index]))
+    return dataset[:, complementary_list], dataset[:, [class_index]].flatten()
 
 
 def categorical_to_numeric(sample: Sample, categories: dict):
@@ -99,30 +91,39 @@ def is_number(value: str) -> bool:
     :param value: string.
     :return: True if value is number, False otherwise.
     """
-    return type(value) == int or type(value) == float or (type(value) == str and value.replace('.', '', 1).isnumeric())
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
 
 
-def get_dataset(path: str, class_index: int, include_first_column: bool = True, train_ratio: float = 0.25, random_seed: int = None) -> Tuple[TrainSamples, TestSamples]:
+def get_dataset(path: str, class_index: int = 0, train_ratio=0.25, random_seed: int = None, shuffle:bool = True, **kw) -> Tuple[TrainSamples, TestSamples]:
     """
-    TODO
-    :param path:
-    :param class_index:
-    :param train_ratio:
-    :param include_first_column:
-    :param random_seed:
-    :return:
+    Gets dataset from csv. the function reads csv from given path, processes it, and returns it as Tuple of TrainSamples, TestSamples.
+    :param path: string that contains the path for the csv.
+    :param class_index: the index of the class in the sample. for default, the class will be at the first place.
+    :param train_ratio: if float, should be between 0.0 and 1.0 and represent the proportion of the dataset to include
+        in the train split. if int, represents the absolute number of train samples. if None, the value is automatically
+        set to the complement of the test size.
+    :param random_seed: controls the shuffling applied to the data before applying the split. Pass an int for reproducible
+        output across multiple function calls.
+    :param shuffle: whether or not to shuffle the data before splitting.
+    :return: Tuple of TrainSamples, TestSamples.
     """
     categories = {}
     samples, classes = get_samples_from_csv(path=path,
                                             class_index=class_index,
-                                            include_first_column=include_first_column,
                                             preprocess=categorical_to_numeric,
-                                            categories=categories)
-    train_samples, train_classes, test_samples, test_classes = sklearn.model_selection.train_test_split(samples,
+                                            categories=categories,
+                                            **kw)
+    shuffle = shuffle if type(random_seed) == int else False
+    train_samples, test_samples, train_classes, test_classes = sklearn.model_selection.train_test_split(samples,
                                                                                                         classes,
                                                                                                         test_size=train_ratio,
                                                                                                         random_state=random_seed,
-                                                                                                        shuffle=True if type(random_seed) == int else False)
+                                                                                                        shuffle=shuffle,
+                                                                                                        stratify=None if not shuffle else True)
     return TrainSamples(train_samples, train_classes), TestSamples(test_samples, test_classes)
 
 
