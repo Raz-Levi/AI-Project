@@ -1,4 +1,7 @@
-﻿0.1,M,0.4, abc, Male, disloyal Customer
-0.2,B,0.05, abc, Female, disloyal Customer
-1,B,5.4, def, Female, Loyal Customer
-1,M,0, abc, Male, Loyal Customer
+﻿feature1, class, feature2, feature3, feature4, feature5, feature7, feature8, feature9, feature10
+0.2, B, 0.05, abc, Female, disloyal Customer, 0.9, Yes, True, 3
+1, B, 5.4, def, Female, Loyal Customer, 1.2, No, False, 10
+1, M, 0, abc, Male, Loyal Customer, 5.6, Yes, False, 20
+0.1, M, 0.4, abc, Male, disloyal Customer, 0, No, True, 10
+0.3, B, 0.9, def, Male, disloyal Customer, 1.8, No, False, 3
+0.4, B, 1.2, def, Female, Loyal Customer, 0.3, Yes, True, 20

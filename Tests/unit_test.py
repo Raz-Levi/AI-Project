@@ -33,8 +33,9 @@ class TestUtils(unittest.TestCase):
 
     def test_get_dataset(self):
         consts = self._get_consts()
-        self._test_get_dataset(path=consts["csv_path"], expected_matrix=consts["full_expected_matrix"], train_ratio=1, random_seed=consts["random_seed"])
-        self._test_get_dataset(path=consts["csv_with_strings_path"], expected_matrix=consts["csv_strings_expected_matrix"], train_ratio=1, random_seed=consts["random_seed"])
+        for ratio in consts["train_ratio"]:
+            self._test_get_dataset(path=consts["csv_path"], expected_matrix=consts["full_expected_matrix"], train_ratio=ratio, random_seed=consts["random_seed"])
+            self._test_get_dataset(path=consts["csv_with_strings_path"], expected_matrix=consts["csv_strings_expected_matrix"], train_ratio=ratio, random_seed=consts["random_seed"])
 
     def test_declarations(self):
         consts = self._get_consts()
@@ -123,9 +124,12 @@ class TestUtils(unittest.TestCase):
                                                   **kw))
 
     def _test_get_dataset(self, path: str, expected_matrix: np.array, train_ratio, random_seed: int):
-        train_samples, test_samples = get_dataset(path=path, train_ratio=train_ratio, random_seed=random_seed, shuffle=False)
-        complementary_list = list(get_complementary_numbers(train_samples.samples.shape[0], [train_samples.samples.shape[0]]))
-        self.assertTrue(self._compare_samples(train_samples.samples, train_samples.classes, expected_matrix[complementary_list, :], 0))
+        for col in range(expected_matrix.shape[1]):
+            train_samples, test_samples = get_dataset(path=path, class_index=col, train_ratio=train_ratio, random_seed=random_seed, shuffle=False)
+            tested_rows = list(range(expected_matrix.shape[0]))[-train_ratio:]
+            complementary_list = list(get_complementary_numbers(train_samples.samples.shape[0], tested_rows))
+            self.assertTrue(self._compare_samples(train_samples.samples, train_samples.classes, expected_matrix[complementary_list, :], col))
+            self.assertTrue(self._compare_samples(test_samples.samples, test_samples.classes, expected_matrix[tested_rows, :], col))
 
     @staticmethod
     def _get_consts() -> dict:
@@ -144,6 +148,7 @@ class TestUtils(unittest.TestCase):
             "total_features_num": 7,
             "default_value": 0,
             "random_seed": 0,
+            "train_ratio": [1, 2, 3, 4],
             "completed_features_inf": np.array([[np.inf, np.inf, 2, np.inf, 2, np.inf, 2]]),
             "completed_features_zero": np.array([[0, 0, 2, 0, 2, 0, 2]]),
             "completed_features_not_sorted": np.array([[2, 0, 2, 0, 0, 0, 2]]),
@@ -152,7 +157,9 @@ class TestUtils(unittest.TestCase):
                 [[1, 0.11, 0.05, 78, 32, 12, 4231], [0, 3.6, 5.4, 4.32, 432.2, 21.4, 43.21],
                  [1, 2, 0, 43, 21, 245, 4.231], [1, 22, 32, 6, 3.45, 62.4, 2.2], [62, 32, 12, 214, 215, 53.215, 21]]),
             "csv_strings_expected_matrix": np.array(
-                [[0.2, 0., 0.05, 0., 0., 0.], [1., 0., 5.4, 1., 0., 1.], [1., 1., 0., 0., 1., 1.]]),
+                [[0.2, 0., 0.05, 0., 0., 0., 0.9, 0, 0, 3], [1., 0., 5.4, 1., 0., 1., 1.2, 1, 1, 10],
+                 [1., 1., 0., 0., 1., 1., 5.6, 0, 1, 20], [0.1, 1, 0.4, 0., 1., 0., 0., 1, 0, 10],
+                 [0.3, 0, 0.9, 1, 1, 0, 1.8, 1, 1, 3], [0.4, 0, 1.2, 1, 0, 1, 0.3, 0, 0, 20]]),
             "csv_samples_expected_matrix": np.array(
                 [[0, 0, 0, 13, 0, 0, 460, 3, 4, 0], [1, 0, 1, 25, 1, 1, 235, 3, 2, 0],
                  [2, 1, 0, 26, 1, 1, 1142, 2, 2, 1]])
