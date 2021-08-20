@@ -7,17 +7,16 @@ Utils For The Project
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import sklearn
 import sklearn.preprocessing as pre
 import scipy.stats as stats
 
-import abc
-from typing import Callable, Iterator
+from typing import Callable, Tuple
 from dataclasses import dataclass
 
 """"""""""""""""""""""""""""""""""" Definitions and Consts """""""""""""""""""""""""""""""""""
 
 Sample = np.array
-TestSamples = np.array
 Classes = np.array
 
 
@@ -27,45 +26,13 @@ class TrainSamples:
     classes: Classes  # Target values- shape (n_samples,).
 
 
+@dataclass
+class TestSamples:
+    samples: np.array  # Test data- shape (n_samples, n_features), i.e samples are in the rows.
+    classes: Classes  # Target values- shape (n_samples,) for computing the accuracy.
+
+
 """"""""""""""""""""""""""""""""""""""""""" Methods """""""""""""""""""""""""""""""""""""""""""
-
-
-def get_samples_from_csv(path: str, preprocess: Callable = None) -> np.array:
-    """
-    get samples from csv as np.ndarray. notice that the first row (titles) are being ignored.
-    :param path: string that contains the path for the csv.
-    :param preprocess: (optional) function for preprocess the data. the function can change the values by reference,
-                        can change by value (the function should return specific sample), or can remove sample due to a
-                        condition (the function should return []).
-    :return: samples as np.ndarray.
-    """
-    samples, data_frame = [], pd.read_csv(filepath_or_buffer=path, sep=",")
-    for example in data_frame.values:
-        sample = list(example)
-        if preprocess is not None:
-            processed_sample = preprocess(sample)
-            sample = sample if processed_sample is None else processed_sample
-        if sample:
-            samples.append(sample)
-    return np.array(samples)
-
-
-def get_generator_for_samples_in_csv(path: str, preprocess: Callable = None) -> Iterator[np.array]:
-    """
-    get generator[np.ndarray] for samples in csv. notice that the first row (titles) are being ignored.
-    :param path: string that contains the path for the csv.
-    :param preprocess: (optional) function for preprocess the data. the function can change the values by reference,
-                        can change by value (the function should return specific sample), or can remove sample due to a
-                        condition (the function should return []).
-    :return: generator[np.ndarray] for the samples.
-    """
-    data_frame = pd.read_csv(filepath_or_buffer=path, sep=",")
-    for row in data_frame.values:
-        sample = list(row)
-        if preprocess is not None:
-            sample = preprocess(sample)
-        if sample:
-            yield np.array(sample)
 
 
 def print_graph(x_values: list, y_values: list, x_label: str, y_label: str):
@@ -80,6 +47,87 @@ def print_graph(x_values: list, y_values: list, x_label: str, y_label: str):
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.show()
+
+
+def get_samples_from_csv(path: str, class_index: int = 0, preprocess: Callable = None, **kw) -> Tuple[np.array, Classes]:
+    """
+    get samples and classes from csv as np.array. notice that the first row (titles) are being ignored.
+    :param path: string that contains the path for the csv.
+    :param class_index: the index of the class in the sample. for default, the class will be at the first place.
+    :param preprocess: (optional) function for preprocess the data. the function runs over the rows and may change the
+        data by reference, by value (the function should return specific sample), or can remove sample due to a condition
+        (in such case the function should return []).
+    :return: tuple of samples and class, both are as np.array.
+    """
+    dataset = pd.read_csv(filepath_or_buffer=path, sep=",").to_numpy()
+    if preprocess is not None:
+        np.apply_along_axis(preprocess, 1, dataset, **kw)
+    complementary_list = list(get_complementary_numbers(dataset.shape[1], [class_index]))
+    return dataset[:, complementary_list], dataset[:, [class_index]].flatten()
+
+
+def categorical_to_numeric(sample: Sample, categories: dict):
+    """
+    Preprocess for samples- the alphabetic features will be converted to numerical features.
+    :param sample: the sample for converting.
+    :param categories: a dictionary that contains the converted features and their numerical values.
+    """
+    for feature_num in range(len(sample)):
+        if not is_number(sample[feature_num]):
+            if sample[feature_num] not in categories.keys():
+                if f'_categories{feature_num}' not in categories.keys():
+                    categories[f'_categories{feature_num}'] = 0
+                categories[sample[feature_num]] = categories[f'_categories{feature_num}']
+                sample[feature_num] = categories[f'_categories{feature_num}']
+                categories[f'_categories{feature_num}'] += 1
+            else:
+                sample[feature_num] = categories[sample[feature_num]]
+
+
+def is_number(value: str) -> bool:
+    """
+    Returns if value is number or not. number is considered whole number or fraction. exponent is not considered as number.
+    :param value: string.
+    :return: True if value is number, False otherwise.
+    """
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
+
+
+def get_dataset(path: str, class_index: int = 0, train_ratio=0.25, random_seed: int = None, shuffle:bool = True, **kw) -> Tuple[TrainSamples, TestSamples]:
+    """
+    Gets dataset from csv. the function reads csv from given path, processes it, and returns it as Tuple of TrainSamples, TestSamples.
+    :param path: string that contains the path for the csv.
+    :param class_index: the index of the class in the sample. for default, the class will be at the first place.
+    :param train_ratio: if float, should be between 0.0 and 1.0 and represent the proportion of the dataset to include
+        in the train split. if int, represents the absolute number of train samples. if None, the value is automatically
+        set to the complement of the test size.
+    :param random_seed: controls the shuffling applied to the data before applying the split. Pass an int for reproducible
+        output across multiple function calls.
+    :param shuffle: whether or not to shuffle the data before splitting.
+    :return: Tuple of TrainSamples, TestSamples.
+    """
+    categories = {}
+    samples, classes = get_samples_from_csv(path=path,
+                                            class_index=class_index,
+                                            preprocess=categorical_to_numeric,
+                                            categories=categories,
+                                            **kw)
+    shuffle = shuffle if type(random_seed) == int else False
+    train_samples, test_samples, train_classes, test_classes = sklearn.model_selection.train_test_split(samples,
+                                                                                                        classes,
+                                                                                                        test_size=train_ratio,
+                                                                                                        random_state=random_seed,
+                                                                                                        shuffle=shuffle,
+                                                                                                        stratify=None if not shuffle else True)
+    return TrainSamples(train_samples, train_classes), TestSamples(test_samples, test_classes)
+
+
+def get_complementary_numbers(size: int, existing_numbers: list) -> set:
+    return set(range(size)) - set(existing_numbers)
 
 
 # deprecated

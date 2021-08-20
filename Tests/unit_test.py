@@ -4,13 +4,12 @@ Automation Tests For The Project
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 import unittest
-from utils import *
+from General.utils import *
 from sklearn.neighbors import KNeighborsClassifier
-from typing import Tuple
 
-from abstract_algorithm import LearningAlgorithm
-from naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
-from mid_algorithm import MaxVarianceAlgorithm
+from LearningAlgorithms.abstract_algorithm import LearningAlgorithm
+from LearningAlgorithms.naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
+from LearningAlgorithms.mid_algorithm import MaxVarianceAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""" Tests  """""""""""""""""""""""""""""""""""""""""
 
@@ -19,33 +18,25 @@ class TestUtils(unittest.TestCase):
     # tests functions
     def test_get_samples_from_csv(self):
         consts = self._get_consts()
-        matrix = get_samples_from_csv(consts["csv_path"])
-        self.assertTrue(type(matrix) == np.ndarray)
-        self.assertTrue(np.array_equal(matrix, consts["full_expected_matrix"]))
+        self._test_get_samples_from_csv(path=consts["csv_path"], expected_matrix=consts["full_expected_matrix"])
 
-    def test_get_samples_from_csv_preprocessing(self):
+    def test_categorical_to_numeric(self):
+        consts, categories = self._get_consts(), {}
+        self._test_get_samples_from_csv(path=consts["csv_with_strings_path"],
+                                        expected_matrix=consts["csv_strings_expected_matrix"],
+                                        preprocess=categorical_to_numeric,
+                                        categories=categories)
+        categories = {}
+        self._test_get_samples_from_csv(path=consts["csv_few_samples"],
+                                        expected_matrix=consts["csv_samples_expected_matrix"],
+                                        preprocess=categorical_to_numeric,
+                                        categories=categories)
+
+    def test_get_dataset(self):
         consts = self._get_consts()
-        matrix = get_samples_from_csv(consts["csv_path"], self._pre_process_function_change_row)
-        self.assertTrue(type(matrix) == np.ndarray)
-        self.assertTrue(np.array_equal(matrix, consts["changed_row_expected_matrix"]))
-
-        matrix = get_samples_from_csv(consts["csv_path"], self._pre_process_function_remove_first_row)
-        self.assertTrue(type(matrix) == np.ndarray)
-        self.assertTrue(np.array_equal(matrix, consts["removed_row_expected_matrix"]))
-
-    def test_get_generator_for_samples_in_csv(self):
-        consts = self._get_consts()
-        matrix_generator = get_generator_for_samples_in_csv(consts["csv_path"])
-        self._compare_generator_to_matrix(matrix_generator, consts["full_expected_matrix"])
-
-    def test_get_generator_for_samples_in_csv_preprocessing_by_reference(self):
-        consts = self._get_consts()
-        matrix_generator = get_generator_for_samples_in_csv(consts["csv_path"], self._pre_process_function_change_row)
-        self._compare_generator_to_matrix(matrix_generator, consts["changed_row_expected_matrix"])
-
-        matrix_generator = get_generator_for_samples_in_csv(consts["csv_path"],
-                                                            self._pre_process_function_remove_first_row)
-        self._compare_generator_to_matrix(matrix_generator, consts["removed_row_expected_matrix"])
+        for ratio in consts["train_ratio"]:
+            self._test_get_dataset(path=consts["csv_path"], expected_matrix=consts["full_expected_matrix"], train_ratio=ratio, random_seed=consts["random_seed"])
+            self._test_get_dataset(path=consts["csv_with_strings_path"], expected_matrix=consts["csv_strings_expected_matrix"], train_ratio=ratio, random_seed=consts["random_seed"])
 
     def test_declarations(self):
         consts = self._get_consts()
@@ -124,13 +115,29 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(0.5, res)
 
     # private functions
+    def _test_get_samples_from_csv(self, path: str, expected_matrix: np.array, preprocess: Callable = None, **kw):
+        for col in range(expected_matrix.shape[1]):
+            samples, classes = get_samples_from_csv(path=path, class_index=col, preprocess=preprocess, **kw)
+            self.assertTrue(self._compare_samples(samples=samples,
+                                                  classes=classes,
+                                                  expected_matrix=expected_matrix,
+                                                  class_index=col,
+                                                  **kw))
+
+    def _test_get_dataset(self, path: str, expected_matrix: np.array, train_ratio, random_seed: int):
+        for col in range(expected_matrix.shape[1]):
+            train_samples, test_samples = get_dataset(path=path, class_index=col, train_ratio=train_ratio, random_seed=random_seed, shuffle=False)
+            tested_rows = list(range(expected_matrix.shape[0]))[-train_ratio:]
+            complementary_list = list(get_complementary_numbers(train_samples.samples.shape[0], tested_rows))
+            self.assertTrue(self._compare_samples(train_samples.samples, train_samples.classes, expected_matrix[complementary_list, :], col))
+            self.assertTrue(self._compare_samples(test_samples.samples, test_samples.classes, expected_matrix[tested_rows, :], col))
+
     @staticmethod
     def _get_consts() -> dict:
         return {
             "csv_path": "test_csv_functions.csv",
-            "full_expected_matrix": [[0.2, 0.11, 0.05], [1., 3.6, 5.4], [1., 2., 0.]],
-            "changed_row_expected_matrix": [[0.2, 0.11, 0.05], [1., -3.6, -5.4], [1., -2., 0.]],
-            "removed_row_expected_matrix": [[1., 3.6, 5.4], [1., 2., 0.]],
+            "csv_with_strings_path": "test_csv_with_strings.csv",
+            "csv_few_samples": "test_csv_few_samples.csv",
             "corr_matrix": [[1, 2, 3, 0], [-2, -4, -6, 0], [3, 6, -5, 1]],
             "costs_list": [1, 2, 3, 4],
             "sample": np.array([[2, 2, 2]]),
@@ -141,26 +148,32 @@ class TestUtils(unittest.TestCase):
             "given_features_full": np.array([5, 1, 2, 0, 6, 4, 3]),
             "total_features_num": 7,
             "default_value": 0,
+            "random_seed": 0,
+            "train_ratio": [1, 2, 3, 4],
             "completed_features_inf": np.array([[np.inf, np.inf, 2, np.inf, 2, np.inf, 2]]),
             "completed_features_zero": np.array([[0, 0, 2, 0, 2, 0, 2]]),
             "completed_features_not_sorted": np.array([[2, 0, 2, 0, 0, 0, 2]]),
             "completed_features_full": np.array([[3, 1, 2, 6, 5, 0, 4]]),
-            "score": 0.07012591041294361
+            "score": 0.07012591041294361,
+            "completed_features_full": np.array([[3, 1, 2, 6, 5, 0, 4]]),
+            "full_expected_matrix": np.array(
+                [[1, 0.11, 0.05, 78, 32, 12, 4231], [0, 3.6, 5.4, 4.32, 432.2, 21.4, 43.21],
+                 [1, 2, 0, 43, 21, 245, 4.231], [1, 22, 32, 6, 3.45, 62.4, 2.2], [62, 32, 12, 214, 215, 53.215, 21]]),
+            "csv_strings_expected_matrix": np.array(
+                [[0.2, 0., 0.05, 0., 0., 0., 0.9, 0, 0, 3], [1., 0., 5.4, 1., 0., 1., 1.2, 1, 1, 10],
+                 [1., 1., 0., 0., 1., 1., 5.6, 0, 1, 20], [0.1, 1, 0.4, 0., 1., 0., 0., 1, 0, 10],
+                 [0.3, 0, 0.9, 1, 1, 0, 1.8, 1, 1, 3], [0.4, 0, 1.2, 1, 0, 1, 0.3, 0, 0, 20]]),
+            "csv_samples_expected_matrix": np.array(
+                [[0, 0, 0, 13, 0, 0, 460, 3, 4, 0], [1, 0, 1, 25, 1, 1, 235, 3, 2, 0],
+                 [2, 1, 0, 26, 1, 1, 1142, 2, 2, 1]])
         }
 
-    def _compare_generator_to_matrix(self, matrix, expected_matrix):
-        for row, expected_row in zip(matrix, expected_matrix):
-            self.assertTrue(np.array_equal(row, expected_row))
-
     @staticmethod
-    def _pre_process_function_change_row(row: np.ndarray):
-        for i in range(len(row)):
-            if row[i] > 1:
-                row[i] = -row[i]
-
-    @staticmethod
-    def _pre_process_function_remove_first_row(row: np.ndarray):
-        return [] if row[0] == 0.2 else row
+    def _compare_samples(samples: np.array, classes: np.array, expected_matrix: np.array, class_index: int, **kw) -> bool:
+        complementary_list = list(get_complementary_numbers(expected_matrix.shape[1], [class_index]))
+        expected_samples, expected_classes = expected_matrix[:, complementary_list], expected_matrix[:, [class_index]]
+        return type(samples) == np.ndarray and np.array_equal(samples, expected_samples) and type(
+            classes) == np.ndarray and np.array_equal(classes, expected_classes.flatten())
 
 
 class TestLearningAlgorithm(unittest.TestCase):

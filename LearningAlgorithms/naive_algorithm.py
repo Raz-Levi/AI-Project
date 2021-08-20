@@ -5,10 +5,8 @@ This module contains naive algorithms
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 import random
 
-from utils import *
-from abstract_algorithm import LearningAlgorithm
-from abstract_algorithm import SequenceAlgorithm
-import sklearn
+from General.utils import *
+from LearningAlgorithms.abstract_algorithm import LearningAlgorithm, SequenceAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""""" Classes """""""""""""""""""""""""""""""""""""""""""
 
@@ -66,7 +64,7 @@ class RandomAlgorithm(SequenceAlgorithm):
         :param maximal_cost: the maximum available cost for buying features.
         :return: the updated given features including all the chosen features.
         """
-        available_features = set(range(self._train_samples.samples.shape[1])) - set(given_features)
+        available_features = get_complementary_numbers(self._train_samples.samples.shape[1], given_features)
         while len(available_features) and maximal_cost:
             chosen_feature = random.choice(list(available_features))
             available_features -= {chosen_feature}
@@ -94,7 +92,7 @@ class OptimalAlgorithm(SequenceAlgorithm):
         :param maximal_cost: the maximum available cost for buying features.
         :return: the updated given features including all the chosen features.
         """
-        available_features = list(set(range(self._train_samples.samples.shape[1])) - set(given_features))
+        available_features = list(get_complementary_numbers(self._train_samples.samples.shape[1], given_features))
         available_features.sort(reverse=True, key=lambda a: self._features_costs[a])
         while len(available_features) and maximal_cost:
             chosen_feature = available_features.pop()
