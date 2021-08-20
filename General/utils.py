@@ -74,7 +74,7 @@ def get_samples_from_csv(path: str, class_index: int = 0, preprocess: Callable =
     dataset = pd.read_csv(filepath_or_buffer=path, sep=",").to_numpy()
     if preprocess is not None:
         np.apply_along_axis(preprocess, 1, dataset, **kw)
-    complementary_list = list(get_complementary_numbers(dataset.shape[1], [class_index]))
+    complementary_list = list(get_complementary_list(range(dataset.shape[1]), [class_index]))
     return dataset[:, complementary_list], dataset[:, [class_index]].flatten()
 
 
@@ -138,8 +138,8 @@ def get_dataset(path: str, class_index: int = 0, train_ratio=0.25, random_seed: 
     return TrainSamples(train_samples, train_classes), TestSamples(test_samples, test_classes)
 
 
-def get_complementary_numbers(size: int, existing_numbers: list) -> set:
-    return set(range(size)) - set(existing_numbers)
+def get_complementary_list(numbers_list: Union, existing_numbers: Union) -> set:
+    return set(numbers_list) - set(existing_numbers)
 
 
 # deprecated

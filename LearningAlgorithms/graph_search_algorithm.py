@@ -49,7 +49,7 @@ class GraphSearchAlgorithm(LearningAlgorithm):
 
     # Private Methods
     def _build_graph(self, total_features: int, given_features: list[int], features_costs: list[float]):
-        nodes = [frozenset(np.append(sub_set, given_features)) for sub_set in powerset(get_complementary_numbers(total_features, given_features))]
+        nodes = [frozenset(np.append(sub_set, given_features)) for sub_set in powerset(get_complementary_list(range(total_features), given_features))]
         self._graph = nx.DiGraph()
         self._graph.add_nodes_from(nodes)
         self._graph.add_weighted_edges_from(self._get_edges(nodes, features_costs))
@@ -59,7 +59,7 @@ class GraphSearchAlgorithm(LearningAlgorithm):
         edges = []
         for source in range(len(nodes)):
             for target in range(source, len(nodes)):
-                missing_element = list(set(nodes[target]) - set(nodes[source]))  # TODO- make it a function of get_complementary_numbers
+                missing_element = list(get_complementary_list(set(nodes[target]), set(nodes[source])))
                 if len(nodes[target]) - len(nodes[source]) == 1 and len(missing_element) == 1:
                     edges.append((nodes[source], nodes[target], features_costs[missing_element[0] - 1]))
         return edges

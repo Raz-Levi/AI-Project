@@ -130,7 +130,7 @@ class TestUtils(unittest.TestCase):
         for col in range(expected_matrix.shape[1]):
             train_samples, test_samples = get_dataset(path=path, class_index=col, train_ratio=train_ratio, random_seed=random_seed, shuffle=False)
             tested_rows = list(range(expected_matrix.shape[0]))[-train_ratio:]
-            complementary_list = list(get_complementary_numbers(train_samples.samples.shape[0], tested_rows))
+            complementary_list = list(get_complementary_list(range(train_samples.samples.shape[0]), tested_rows))
             self.assertTrue(self._compare_samples(train_samples.samples, train_samples.classes, expected_matrix[complementary_list, :], col))
             self.assertTrue(self._compare_samples(test_samples.samples, test_samples.classes, expected_matrix[tested_rows, :], col))
 
@@ -171,7 +171,7 @@ class TestUtils(unittest.TestCase):
 
     @staticmethod
     def _compare_samples(samples: np.array, classes: np.array, expected_matrix: np.array, class_index: int, **kw) -> bool:
-        complementary_list = list(get_complementary_numbers(expected_matrix.shape[1], [class_index]))
+        complementary_list = list(get_complementary_list(range(expected_matrix.shape[1]), [class_index]))
         expected_samples, expected_classes = expected_matrix[:, complementary_list], expected_matrix[:, [class_index]]
         return type(samples) == np.ndarray and np.array_equal(samples, expected_samples) and type(
             classes) == np.ndarray and np.array_equal(classes, expected_classes.flatten())
@@ -320,7 +320,7 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
         consts = self._get_consts()
         algorithm = GraphSearchAlgorithm(consts["search_algorithm"])
         for given_features in consts["given_features"]:
-            features_costs = [i for i in range(len(get_complementary_numbers(consts["total_features"], given_features)))]
+            features_costs = [i for i in range(len(get_complementary_list(range(consts["total_features"]), given_features)))]
             algorithm._build_graph(total_features=consts["total_features"], given_features=given_features, features_costs=features_costs)
             self.assertTrue(algorithm._graph.nodes, consts[f'expected_nodes_{given_features}'])
             self.assertTrue(algorithm._graph.edges, consts[f'expected_nodes_{given_features}'])
