@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import sklearn
 import sklearn.preprocessing as pre
 import scipy.stats as stats
+import networkx as nx
 
 from typing import Callable, Tuple
 from dataclasses import dataclass
