@@ -3,9 +3,8 @@ This module defines an abstract algorithm class.
 """
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
-from utils import *
 import abc
-import sklearn
+from General.utils import *
 
 """"""""""""""""""""""""""""""""""""""""""" Class """""""""""""""""""""""""""""""""""""""""""
 

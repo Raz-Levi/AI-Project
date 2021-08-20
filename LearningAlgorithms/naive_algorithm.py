@@ -5,10 +5,8 @@ This module contains naive algorithms
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 import random
 
-from utils import *
-from abstract_algorithm import LearningAlgorithm
-from abstract_algorithm import SequenceAlgorithm
-import sklearn
+from General.utils import *
+from LearningAlgorithms.abstract_algorithm import LearningAlgorithm, SequenceAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""""" Classes """""""""""""""""""""""""""""""""""""""""""
 

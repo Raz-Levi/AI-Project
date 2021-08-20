@@ -3,9 +3,8 @@ This module contains a partially sophisticated algorithm
 """
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
-from utils import *
-from naive_algorithm import SequenceAlgorithm
-import sklearn
+from General.utils import *
+from LearningAlgorithms.abstract_algorithm import SequenceAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""""" Classes """""""""""""""""""""""""""""""""""""""""""
 

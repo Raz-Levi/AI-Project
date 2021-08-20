@@ -4,12 +4,12 @@ Automation Tests For The Project
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 import unittest
-from utils import *
+from General.utils import *
 from sklearn.neighbors import KNeighborsClassifier
 
-from abstract_algorithm import LearningAlgorithm
-from naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
-from mid_algorithm import MaxVarianceAlgorithm
+from LearningAlgorithms.abstract_algorithm import LearningAlgorithm
+from LearningAlgorithms.naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
+from LearningAlgorithms.mid_algorithm import MaxVarianceAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""" Tests  """""""""""""""""""""""""""""""""""""""""
 
