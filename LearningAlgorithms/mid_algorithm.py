@@ -56,6 +56,3 @@ class MaxVarianceAlgorithm(SequenceAlgorithm):
             maximal_cost -= self._features_costs[chosen_feature]
             new_given_features.append(chosen_feature)
         return new_given_features
-
-
-

@@ -6,10 +6,12 @@ Automation Tests For The Project
 import unittest
 from General.utils import *
 from sklearn.neighbors import KNeighborsClassifier
+from networkx.algorithms.shortest_paths.astar import astar_path
 
 from LearningAlgorithms.abstract_algorithm import LearningAlgorithm
 from LearningAlgorithms.naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
 from LearningAlgorithms.mid_algorithm import MaxVarianceAlgorithm
+from LearningAlgorithms.graph_search_algorithm import GraphSearchAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""" Tests  """""""""""""""""""""""""""""""""""""""""
 
@@ -155,7 +157,6 @@ class TestUtils(unittest.TestCase):
             "completed_features_not_sorted": np.array([[2, 0, 2, 0, 0, 0, 2]]),
             "completed_features_full": np.array([[3, 1, 2, 6, 5, 0, 4]]),
             "score": 0.07012591041294361,
-            "completed_features_full": np.array([[3, 1, 2, 6, 5, 0, 4]]),
             "full_expected_matrix": np.array(
                 [[1, 0.11, 0.05, 78, 32, 12, 4231], [0, 3.6, 5.4, 4.32, 432.2, 21.4, 43.21],
                  [1, 2, 0, 43, 21, 245, 4.231], [1, 22, 32, 6, 3.45, 62.4, 2.2], [62, 32, 12, 214, 215, 53.215, 21]]),
@@ -177,6 +178,7 @@ class TestUtils(unittest.TestCase):
 
 
 class TestLearningAlgorithm(unittest.TestCase):
+    # tests functions
     def test_initialization(self):
         consts = self._get_consts()
         simple_algorithm = self._get_instance()
@@ -261,8 +263,7 @@ class TestNaiveAlgorithm(unittest.TestCase):
     def _test_initialization(tested_algorithm) -> bool:
         consts = TestNaiveAlgorithm._get_consts()
         algorithm = tested_algorithm(learning_algorithm=consts["learning_algorithm"])
-        return type(algorithm) == tested_algorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit,
-                                                                                                          '__call__')
+        return type(algorithm) == tested_algorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit, '__call__')
 
     @staticmethod
     def _test_naive_algorithm(tested_algorithm) -> Tuple[bool, LearningAlgorithm]:
@@ -306,6 +307,54 @@ class TestNaiveAlgorithm(unittest.TestCase):
                                              maximal_cost=consts["maximal_cost_partially"])
         test_result = test_result and np.array_equal(predicted_sample, consts["train_samples"].classes)
         return test_result, algorithm
+
+
+class TestGraphSearchAlgorithm(unittest.TestCase):
+    # tests functions
+    def test_initialization(self):
+        consts = self._get_consts()
+        algorithm = GraphSearchAlgorithm(consts["search_algorithm"])
+        return type(algorithm) == GraphSearchAlgorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit, '__call__')
+
+    def test_build_graph(self):
+        consts = self._get_consts()
+        algorithm = GraphSearchAlgorithm(consts["search_algorithm"])
+        for given_features in consts["given_features"]:
+            features_costs = [i for i in range(len(get_complementary_numbers(consts["total_features"], given_features)))]
+            algorithm._build_graph(total_features=consts["total_features"], given_features=given_features, features_costs=features_costs)
+            self.assertTrue(algorithm._graph.nodes, consts[f'expected_nodes_{given_features}'])
+            self.assertTrue(algorithm._graph.edges, consts[f'expected_nodes_{given_features}'])
+
+    # private functions
+    @staticmethod
+    def _get_consts() -> dict:
+        return {
+            "search_algorithm": astar_path,
+            # "csv_path": "test_csv_functions.csv",
+            # "csv_with_strings_path": "test_csv_with_strings.csv",
+            "train_ratio": 1,
+            "given_features": [[0], [3], [2, 3]],
+            "maximal_cost": 10,
+            "total_features": 4,
+            "expected_nodes_[0]": [frozenset({0.0}), frozenset({0, 1}), frozenset({0, 2}), frozenset({0, 3}),
+                                   frozenset({0, 1, 2}), frozenset({0, 1, 3}), frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})],
+            "expected_edges_[0]": [(frozenset({0.0}), frozenset({0, 1})), (frozenset({0.0}), frozenset({0, 2})),
+                                   (frozenset({0.0}), frozenset({0, 3})), (frozenset({0, 1}), frozenset({0, 1, 2})),
+                                   (frozenset({0, 1}), frozenset({0, 1, 3})), (frozenset({0, 2}), frozenset({0, 1, 2})),
+                                   (frozenset({0, 2}), frozenset({0, 2, 3})), (frozenset({0, 3}), frozenset({0, 1, 3})),
+                                   (frozenset({0, 3}), frozenset({0, 2, 3})), (frozenset({0, 1, 2}), frozenset({0, 1, 2, 3})),
+                                   (frozenset({0, 1, 3}), frozenset({0, 1, 2, 3})), (frozenset({0, 2, 3}), frozenset({0, 1, 2, 3}))],
+            "expected_nodes_[3]": [frozenset({3.0}), frozenset({0, 3}), frozenset({1, 3}), frozenset({2, 3}), frozenset({0, 1, 3}),
+                                   frozenset({0, 2, 3}), frozenset({1, 2, 3}), frozenset({0, 1, 2, 3})],
+            "expected_edges_[3]": [(frozenset({3.0}), frozenset({0, 3})), (frozenset({3.0}), frozenset({1, 3})), (frozenset({3.0}),
+                                   frozenset({2, 3})), (frozenset({0, 3}), frozenset({0, 1, 3})), (frozenset({0, 3}), frozenset({0, 2, 3})),
+                                   (frozenset({1, 3}), frozenset({0, 1, 3})), (frozenset({1, 3}), frozenset({1, 2, 3})), (frozenset({2, 3}),
+                                   frozenset({0, 2, 3})), (frozenset({2, 3}), frozenset({1, 2, 3})), (frozenset({0, 1, 3}), frozenset({0, 1, 2, 3})),
+                                   (frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})), (frozenset({1, 2, 3}), frozenset({0, 1, 2, 3}))],
+            "expected_nodes_[2, 3]": [frozenset({2.0, 3.0}), frozenset({0, 2, 3}), frozenset({1, 2, 3}), frozenset({0, 1, 2, 3})],
+            "expected_edges_[2, 3]": [(frozenset({2.0, 3.0}), frozenset({0, 2, 3})), (frozenset({2.0, 3.0}), frozenset({1, 2, 3})),
+                                      (frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})), (frozenset({1, 2, 3}), frozenset({0, 1, 2, 3}))]
+        }
 
 
 if __name__ == '__main__':

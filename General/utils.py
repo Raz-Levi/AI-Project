@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 import sklearn
 import sklearn.preprocessing as pre
 import scipy.stats as stats
-import networkx as nx
+from collections import Iterable
 
-from typing import Callable, Tuple
+from typing import Callable, Tuple, Union
 from dataclasses import dataclass
 
 """"""""""""""""""""""""""""""""""" Definitions and Consts """""""""""""""""""""""""""""""""""
@@ -31,6 +31,17 @@ class TrainSamples:
 class TestSamples:
     samples: np.array  # Test data- shape (n_samples, n_features), i.e samples are in the rows.
     classes: Classes  # Target values- shape (n_samples,) for computing the accuracy.
+
+
+# from https://stackoverflow.com/questions/35004882/make-a-list-of-ints-hashable-in-python
+class HashSet(set):
+    def __init__(self, *args):
+        if len(args) == 1 and isinstance(args[0], Iterable):
+            args = args[0]
+        super().__init__(args)
+
+    def __hash__(self):
+        return hash(e for e in self)
 
 
 """"""""""""""""""""""""""""""""""""""""""" Methods """""""""""""""""""""""""""""""""""""""""""
