@@ -268,16 +268,16 @@ class TestScoreFunction(unittest.TestCase):
         samples = consts["corr_matrix"]
         classes = consts["classes"]
         costs_list = consts["costs_list"]
-        score_function = ScoreFunctionA(TrainSamples(samples, classes), [2], 1, costs_list, alpha=1)
-        self.assertEqual(score_function(), 0)
+        score_function = ScoreFunctionA(TrainSamples(samples, classes), [2], 1, costs_list)
+        self.assertEqual(score_function(alpha=1), 0)
 
     def test_function_scoreA_2(self):
         consts = self._get_consts()
         samples = consts["corr_matrix"]
         classes = consts["classes"]
         costs_list = consts["costs_list"]
-        score_function = ScoreFunctionA(TrainSamples(samples, classes), [0, 2], 1, costs_list, alpha=2)
-        self.assertEqual(score_function(), 21)
+        score_function = ScoreFunctionA(TrainSamples(samples, classes), [0, 2], 1, costs_list)
+        self.assertEqual(score_function(alpha=2), 21)
 
     def test_function_scoreB_1(self):
         consts = self._get_consts()
@@ -285,8 +285,8 @@ class TestScoreFunction(unittest.TestCase):
         classes = consts["classes"]
         costs_list = consts["costs_list"]
         learner = KNeighborsClassifier(1)
-        score_function = ScoreFunctionB(TrainSamples(samples, classes), [2], 1, costs_list, learning_algorithm=learner)
-        self.assertEqual(score_function(), 0.5)
+        score_function = ScoreFunctionB(TrainSamples(samples, classes), [2], 1, costs_list)
+        self.assertEqual(score_function(learning_algorithm=learner), 0.5)
 
     def test_function_scoreB_2(self):
         consts = self._get_consts()
@@ -294,9 +294,8 @@ class TestScoreFunction(unittest.TestCase):
         classes = consts["classes"]
         costs_list = consts["costs_list"]
         learner = KNeighborsClassifier(1)
-        score_function = ScoreFunctionB(TrainSamples(samples, classes), [0, 1], 2, costs_list,
-                                        learning_algorithm=learner, alpha=2)
-        self.assertEqual(score_function(), 0.3333333333333333)
+        score_function = ScoreFunctionB(TrainSamples(samples, classes), [0, 1], 2, costs_list)
+        self.assertEqual(score_function(learning_algorithm=learner, alpha=2), 0.3333333333333333)
 
     # private functions
     @staticmethod
