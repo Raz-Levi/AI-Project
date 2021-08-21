@@ -10,9 +10,8 @@ import matplotlib.pyplot as plt
 import sklearn
 import sklearn.preprocessing as pre
 import scipy.stats as stats
-from collections import Iterable
 
-from typing import Callable, Tuple, Union
+from typing import Callable, Tuple, Union, Optional
 from dataclasses import dataclass
 
 """"""""""""""""""""""""""""""""""" Definitions and Consts """""""""""""""""""""""""""""""""""
@@ -33,17 +32,6 @@ class TestSamples:
     classes: Classes  # Target values- shape (n_samples,) for computing the accuracy.
 
 
-# from https://stackoverflow.com/questions/35004882/make-a-list-of-ints-hashable-in-python
-class HashSet(set):
-    def __init__(self, *args):
-        if len(args) == 1 and isinstance(args[0], Iterable):
-            args = args[0]
-        super().__init__(args)
-
-    def __hash__(self):
-        return hash(e for e in self)
-
-
 """"""""""""""""""""""""""""""""""""""""""" Methods """""""""""""""""""""""""""""""""""""""""""
 
 
@@ -61,7 +49,7 @@ def print_graph(x_values: list, y_values: list, x_label: str, y_label: str):
     plt.show()
 
 
-def get_samples_from_csv(path: str, class_index: int = 0, preprocess: Callable = None, **kw) -> Tuple[np.array, Classes]:
+def get_samples_from_csv(path: str, class_index: int = 0, preprocess: Optional[Callable] = None, **kw) -> Tuple[np.array, Classes]:
     """
     get samples and classes from csv as np.array. notice that the first row (titles) are being ignored.
     :param path: string that contains the path for the csv.
@@ -74,7 +62,7 @@ def get_samples_from_csv(path: str, class_index: int = 0, preprocess: Callable =
     dataset = pd.read_csv(filepath_or_buffer=path, sep=",").to_numpy()
     if preprocess is not None:
         np.apply_along_axis(preprocess, 1, dataset, **kw)
-    complementary_list = list(get_complementary_list(range(dataset.shape[1]), [class_index]))
+    complementary_list = list(get_complementary_set(range(dataset.shape[1]), [class_index]))
     return dataset[:, complementary_list], dataset[:, [class_index]].flatten()
 
 
@@ -109,7 +97,8 @@ def is_number(value: str) -> bool:
         return False
 
 
-def get_dataset(path: str, class_index: int = 0, train_ratio=0.25, random_seed: int = None, shuffle:bool = True, **kw) -> Tuple[TrainSamples, TestSamples]:
+def get_dataset(path: str, class_index: int = 0, train_ratio=0.25, random_seed: Optional[int] = None,
+                shuffle: Optional[bool] = True, **kw) -> Tuple[TrainSamples, TestSamples]:
     """
     Gets dataset from csv. the function reads csv from given path, processes it, and returns it as Tuple of TrainSamples, TestSamples.
     :param path: string that contains the path for the csv.
@@ -138,13 +127,28 @@ def get_dataset(path: str, class_index: int = 0, train_ratio=0.25, random_seed: 
     return TrainSamples(train_samples, train_classes), TestSamples(test_samples, test_classes)
 
 
-def get_complementary_list(numbers_list: Union, existing_numbers: Union) -> set:
-    return set(numbers_list) - set(existing_numbers)
+def get_complementary_set(elements_list: Union, existing_elements: Union) -> set:
+    """
+    Gets the complementary set of given set, i.e set of the elements in elements_list which are not in existing_elements.
+    :param elements_list: set of the all elements.
+    :param existing_elements: set of some elements that shouldn't be in the complementary set.
+    :return: set of the elements in elements_list which are not in existing_elements.
+    """
+    return set(elements_list) - set(existing_elements)
+
+
+def normalize_data(data):
+    """
+    Normalizes given data.
+    :param data: data for normalizing.
+    :return: normalized data.
+    """
+    return pre.normalize(data, axis=0)
 
 
 # deprecated
 def complete_features(samples: Sample, given_features: list[int], total_features_num: int,
-                      default_value: float = np.inf) -> Sample:
+                      default_value: Optional[float] = np.inf) -> Sample:
     """
     expands each of the given samples to size total_features_num by placing default_value in all the places which are
     not in given_features.
@@ -165,10 +169,6 @@ def complete_features(samples: Sample, given_features: list[int], total_features
             expanded_sample[feature_idx] = feature_value
         expanded_samples.append(expanded_sample)
     return np.array(expanded_samples)
-
-
-def normalize_data(data):
-    return pre.normalize(data, axis=0)
 
 
 """"""""""""""""""""""""""""""""""""""""""" Score Function """""""""""""""""""""""""""""""""""""""""""

@@ -130,7 +130,7 @@ class TestUtils(unittest.TestCase):
         for col in range(expected_matrix.shape[1]):
             train_samples, test_samples = get_dataset(path=path, class_index=col, train_ratio=train_ratio, random_seed=random_seed, shuffle=False)
             tested_rows = list(range(expected_matrix.shape[0]))[-train_ratio:]
-            complementary_list = list(get_complementary_list(range(train_samples.samples.shape[0]), tested_rows))
+            complementary_list = list(get_complementary_set(range(train_samples.samples.shape[0]), tested_rows))
             self.assertTrue(self._compare_samples(train_samples.samples, train_samples.classes, expected_matrix[complementary_list, :], col))
             self.assertTrue(self._compare_samples(test_samples.samples, test_samples.classes, expected_matrix[tested_rows, :], col))
 
@@ -171,7 +171,7 @@ class TestUtils(unittest.TestCase):
 
     @staticmethod
     def _compare_samples(samples: np.array, classes: np.array, expected_matrix: np.array, class_index: int, **kw) -> bool:
-        complementary_list = list(get_complementary_list(range(expected_matrix.shape[1]), [class_index]))
+        complementary_list = list(get_complementary_set(range(expected_matrix.shape[1]), [class_index]))
         expected_samples, expected_classes = expected_matrix[:, complementary_list], expected_matrix[:, [class_index]]
         return type(samples) == np.ndarray and np.array_equal(samples, expected_samples) and type(
             classes) == np.ndarray and np.array_equal(classes, expected_classes.flatten())
@@ -313,26 +313,55 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
     # tests functions
     def test_initialization(self):
         consts = self._get_consts()
-        algorithm = GraphSearchAlgorithm(consts["search_algorithm"])
+        algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
         return type(algorithm) == GraphSearchAlgorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit, '__call__')
 
     def test_build_graph(self):
         consts = self._get_consts()
-        algorithm = GraphSearchAlgorithm(consts["search_algorithm"])
+        algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
         for given_features in consts["given_features"]:
-            features_costs = [i for i in range(len(get_complementary_list(range(consts["total_features"]), given_features)))]
+            features_costs = [i for i in range(len(get_complementary_set(range(consts["total_features"]), given_features)))]
             algorithm._build_graph(total_features=consts["total_features"], given_features=given_features, features_costs=features_costs)
             self.assertTrue(algorithm._graph.nodes, consts[f'expected_nodes_{given_features}'])
             self.assertTrue(algorithm._graph.edges, consts[f'expected_nodes_{given_features}'])
+            self.assertTrue(list(algorithm._graph.nodes)[0] == frozenset(given_features))
+            self.assertTrue(list(algorithm._graph.nodes)[-1] == frozenset(range(consts["total_features"])))
+
+    # TODO- finish this test
+    def test_buy_features(self):
+        print("\n")
+        consts = self._get_consts()
+        train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"])
+        algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
+        algorithm.fit(train_samples, consts["features_costs"])
+        print(algorithm._buy_features(consts["given_features"][0], consts["maximal_cost"]))
+
+    # TODO- finish this test
+    # def test_graph_search_algorithm(self):
+    #     consts = self._get_consts()
+    #     train_samples, test_samples = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"])
+    #     algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
+    #     algorithm.fit(train_samples, consts["features_costs"])
+    #     algorithm.predict(test_samples, consts["given_features"][0], consts["maximal_cost"])
 
     # private functions
     @staticmethod
     def _get_consts() -> dict:
+        def simple_heuristic(a, b) -> float:
+            print(a)
+            print(b)
+            print("\n")
+            print("\n")
+            return 0.2
+
         return {
+            "learning_algorithm": KNeighborsClassifier(n_neighbors=1),
             "search_algorithm": astar_path,
-            # "csv_path": "test_csv_functions.csv",
-            # "csv_with_strings_path": "test_csv_with_strings.csv",
+            "heuristic": simple_heuristic,
+            "numeric_samples_path": "test_csv_functions.csv",
+            # "strings_samples_path": "test_csv_with_strings.csv",
             "train_ratio": 1,
+            "features_costs": [1, 2, 3, 4, 5, 6],
             "given_features": [[0], [3], [2, 3]],
             "maximal_cost": 10,
             "total_features": 4,
