@@ -5,6 +5,7 @@ This module contains a search algorithm based on a genetic algorithm
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 from LearningAlgorithms.abstract_algorithm import SequenceAlgorithm
 import sklearn
+import numpy as np
 from General.score import ScoreFunction
 
 from itertools import chain, combinations
@@ -26,6 +27,9 @@ class GeneticAlgorithm(SequenceAlgorithm):
         self._all_features = [i for i in range(number_of_features)]
 
     def _buy_features(self, given_features: list[int], maximal_cost: float) -> list[int]:
+        population = self._get_population(given_features, maximal_cost)
+
+
         pass
 
     def _get_population(self, given_features: list[int], maximal_cost: float):
@@ -41,7 +45,8 @@ class GeneticAlgorithm(SequenceAlgorithm):
         population = []
         for subset in power_series:
             if self._calc_subset_cost(list(subset)) <= maximal_cost:
-                population.append(subset)
+                genom = np.zeros(max(subset)+1)
+                population.append(genom+given_features)
         return population
 
     def _calc_subset_cost(self, subset: list[int]) -> float:
