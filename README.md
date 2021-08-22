@@ -10,4 +10,6 @@ LearningAlgorithm/mid_algorithm.py: Module for a partially sophisticated algorit
 
 LearningAlgorithm/graph_search_algorithm.py: Module for a graph search algorithm
 
+genetic_algorithm.py: Module for a search algorithm based on a genetic algorithm
+
 Tests/unit_test.py: Automation Tests For The Project
