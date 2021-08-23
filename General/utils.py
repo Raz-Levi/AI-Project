@@ -6,11 +6,13 @@ Utils For The Project
 
 import pandas as pd
 import numpy as np
+import networkx as nx
 import matplotlib.pyplot as plt
 import sklearn
 import sklearn.preprocessing as pre
+import abc
 
-from typing import Callable, Tuple
+from typing import Callable, Tuple, Union, Optional
 from dataclasses import dataclass
 
 """"""""""""""""""""""""""""""""""" Definitions and Consts """""""""""""""""""""""""""""""""""
@@ -19,16 +21,29 @@ Sample = np.array
 Classes = np.array
 
 
-@dataclass
-class TrainSamples:
-    samples: np.array  # Training data- shape (n_samples, n_features), i.e samples are in the rows.
-    classes: Classes  # Target values- shape (n_samples,).
+class Samples(object):
+    """
+    Generic class for batch of samples.
+    """
+    def __init__(self, train_samples: np.array, train_classes: Classes):
+        self.samples = train_samples  # Data- shape (n_samples, n_features), i.e samples are in the rows.
+        self.classes = train_classes  # Target values- shape (n_samples,).
+
+    def get_features_num(self):
+        """
+        :return: total features number of the samples in the batch.
+        """
+        return self.samples.shape[1]
+
+    def get_samples_num(self):
+        """
+        :return: number of the all samples in the batch.
+        """
+        return self.samples.shape[0]
 
 
-@dataclass
-class TestSamples:
-    samples: np.array  # Test data- shape (n_samples, n_features), i.e samples are in the rows.
-    classes: Classes  # Target values- shape (n_samples,) for computing the accuracy.
+TrainSamples = Samples
+TestSamples = Samples
 
 
 """"""""""""""""""""""""""""""""""""""""""" Methods """""""""""""""""""""""""""""""""""""""""""
@@ -48,7 +63,7 @@ def print_graph(x_values: list, y_values: list, x_label: str, y_label: str):
     plt.show()
 
 
-def get_samples_from_csv(path: str, class_index: int = 0, preprocess: Callable = None, **kw) -> Tuple[np.array, Classes]:
+def get_samples_from_csv(path: str, class_index: int = 0, preprocess: Optional[Callable] = None, **kw) -> Tuple[np.array, Classes]:
     """
     get samples and classes from csv as np.array. notice that the first row (titles) are being ignored.
     :param path: string that contains the path for the csv.
@@ -61,7 +76,7 @@ def get_samples_from_csv(path: str, class_index: int = 0, preprocess: Callable =
     dataset = pd.read_csv(filepath_or_buffer=path, sep=",").to_numpy()
     if preprocess is not None:
         np.apply_along_axis(preprocess, 1, dataset, **kw)
-    complementary_list = list(get_complementary_numbers(dataset.shape[1], [class_index]))
+    complementary_list = list(get_complementary_set(range(dataset.shape[1]), [class_index]))
     return dataset[:, complementary_list], dataset[:, [class_index]].flatten()
 
 
@@ -96,7 +111,8 @@ def is_number(value: str) -> bool:
         return False
 
 
-def get_dataset(path: str, class_index: int = 0, train_ratio=0.25, random_seed: int = None, shuffle:bool = True, **kw) -> Tuple[TrainSamples, TestSamples]:
+def get_dataset(path: str, class_index: int = 0, train_ratio=0.25, random_seed: Optional[int] = None,
+                shuffle: Optional[bool] = True, **kw) -> Tuple[TrainSamples, TestSamples]:
     """
     Gets dataset from csv. the function reads csv from given path, processes it, and returns it as Tuple of TrainSamples, TestSamples.
     :param path: string that contains the path for the csv.
@@ -125,35 +141,20 @@ def get_dataset(path: str, class_index: int = 0, train_ratio=0.25, random_seed: 
     return TrainSamples(train_samples, train_classes), TestSamples(test_samples, test_classes)
 
 
-def get_complementary_numbers(size: int, existing_numbers: list) -> set:
-    return set(range(size)) - set(existing_numbers)
-
-
-# deprecated
-def complete_features(samples: Sample, given_features: list[int], total_features_num: int,
-                      default_value: float = np.inf) -> Sample:
+def get_complementary_set(elements_list: Union, existing_elements: Union) -> set:
     """
-    expands each of the given samples to size total_features_num by placing default_value in all the places which are
-    not in given_features.
-    samples has to be arranged according to given_features- the function sets the first value in sample to the first
-    index in given_features in the new expanded sample.
-    given_features isn't required to be sorted.
-    total_features_num has to be equal or above than the size of sample and given_features.
-    :param samples: given samples for expanding.
-    :param given_features: list of the indices of the chosen features.
-    :param total_features_num: the number to be expanded to.
-    :param default_value: the default value to place in all the places which are not in given_features. default value is inf.
-    :return expanded sample of shape (n_samples, total_features_num).
+    Gets the complementary set of given set, i.e set of the elements in elements_list which are not in existing_elements.
+    :param elements_list: set of the all elements.
+    :param existing_elements: set of some elements that shouldn't be in the complementary set.
+    :return: set of the elements in elements_list which are not in existing_elements.
     """
-    expanded_samples = []
-    for sample in samples:
-        expanded_sample = [default_value for _ in range(total_features_num)]
-        for feature_idx, feature_value in zip(given_features, sample):
-            expanded_sample[feature_idx] = feature_value
-        expanded_samples.append(expanded_sample)
-    return np.array(expanded_samples)
+    return set(elements_list) - set(existing_elements)
 
 
 def normalize_data(data):
+    """
+    Normalizes given data.
+    :param data: data for normalizing.
+    :return: normalized data.
+    """
     return pre.normalize(data, axis=0)
-

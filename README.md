@@ -1,13 +1,15 @@
 #AI Project by Sivan Yosebashvili and Raz Levi
 
-utils.py: Utils For The Project
+General/utils.py: Utils For The Project
 
-score.py: Module that defines the score functions we are using
+General/score.py: Module that defines the score functions we are using
 
-abstract_algorithm.py: Module for an abstract algorithm class
+LearningAlgorithm/abstract_algorithm.py: Module for an abstract algorithm class
 
-naive_algorithm.py: Module for naive algorithms
+LearningAlgorithm/naive_algorithm.py: Module for naive algorithms
 
-mid_algorithm.py: Module for a partially sophisticated algorithm
+LearningAlgorithm/mid_algorithm.py: Module for a partially sophisticated algorithm
+
+LearningAlgorithm/graph_search_algorithm.py: Module for a graph search algorithm
 
 Tests/unit_test.py: Automation Tests For The Project
