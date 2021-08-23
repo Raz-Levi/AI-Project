@@ -24,20 +24,18 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
     """
     # Public Methods
     def __init__(self, learning_algorithm: sklearn.base.ClassifierMixin, search_algorithm: nx.algorithms,
-                 score_function: ScoreFunction, algorithm_method: Optional[str] = "dijkstra",
-                 alpha_for_score_function: Optional[float] = 1):
+                 score_function: ScoreFunction, algorithm_method: Optional[str] = "dijkstra"):
         """
         Init function for GraphSearchAlgorithm algorithm.
         :param learning_algorithm: sklearn's classifier. the function saves it and uses it later.
         :param search_algorithm: nx.algorithm for performing search on graph.
         :param score_function: ScoreFunction object for calculating the weights on the edges.
         :param algorithm_method: (Optional) the algorithm to use to compute the path. supported options: ‘dijkstra’, ‘bellman-ford’.
-        :param (Optional) alpha_for_score_function: alpha parameter for the ScoreFunction.
         """
         super().__init__(learning_algorithm)
         self._search_algorithm = search_algorithm
         self._algorithm_method = algorithm_method
-        self._score_function = score_function(learning_algorithm=learning_algorithm, alpha=alpha_for_score_function)
+        self._score_function = score_function
         self._graph = None
 
     # Private Methods

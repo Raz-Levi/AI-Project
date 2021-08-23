@@ -62,7 +62,7 @@ class ScoreFunctionB(ScoreFunction):
     return the feature score according to the theory we explain in the PDF.
     """
     # Public Methods
-    def __init__(self, alpha: int, learning_algorithm: sklearn.base.ClassifierMixin):
+    def __init__(self, alpha: int = 1, learning_algorithm: sklearn.base.ClassifierMixin = None):
         super().__init__(learning_algorithm, alpha)
 
     # Private Methods
