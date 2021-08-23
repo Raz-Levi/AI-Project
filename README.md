@@ -2,11 +2,9 @@
 
 General/utils.py: Utils For The Project
 
+General/score.py: Module that defines the score functions we are using
+
 LearningAlgorithm/abstract_algorithm.py: Module for an abstract algorithm class
-
-score.py: Module that defines the score functions we are using
-
-abstract_algorithm.py: Module for an abstract algorithm class
 
 LearningAlgorithm/naive_algorithm.py: Module for naive algorithms
 

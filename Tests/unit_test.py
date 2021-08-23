@@ -8,12 +8,11 @@ from General.utils import *
 from sklearn.neighbors import KNeighborsClassifier
 from networkx.algorithms.shortest_paths.astar import astar_path
 
+from General.score import ScoreFunction, ScoreFunctionA, ScoreFunctionB
 from LearningAlgorithms.abstract_algorithm import LearningAlgorithm
 from LearningAlgorithms.naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
 from LearningAlgorithms.mid_algorithm import MaxVarianceAlgorithm
 from LearningAlgorithms.graph_search_algorithm import GraphSearchAlgorithm
-
-from General.score import ScoreFunctionA, ScoreFunctionB
 
 """"""""""""""""""""""""""""""""""""""""" Tests  """""""""""""""""""""""""""""""""""""""""
 
@@ -50,27 +49,6 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(np.array_equal(train_samples.samples, sample))
         self.assertTrue(np.array_equal(train_samples.classes, classes))
 
-    def test_complete_features(self):
-        consts = self._get_consts()
-        self.assertTrue(np.array_equal(complete_features(samples=consts["sample"],
-                                                         given_features=consts["given_features"],
-                                                         total_features_num=consts["total_features_num"]),
-                                       consts["completed_features_inf"]))
-        self.assertTrue(np.array_equal(complete_features(samples=consts["sample"],
-                                                         given_features=consts["given_features"],
-                                                         total_features_num=consts["total_features_num"],
-                                                         default_value=consts["default_value"]),
-                                       consts["completed_features_zero"]))
-        self.assertTrue(np.array_equal(complete_features(samples=consts["sample"],
-                                                         given_features=consts["given_features_not_sorted"],
-                                                         total_features_num=consts["total_features_num"],
-                                                         default_value=consts["default_value"]),
-                                       consts["completed_features_not_sorted"]))
-        self.assertTrue(np.array_equal(complete_features(samples=consts["full_sample"],
-                                                         given_features=consts["given_features_full"],
-                                                         total_features_num=consts["total_features_num"]),
-                                       consts["completed_features_full"]))
-
     # private functions
     def _test_get_samples_from_csv(self, path: str, expected_matrix: np.array, preprocess: Callable = None, **kw):
         for col in range(expected_matrix.shape[1]):
@@ -97,12 +75,6 @@ class TestUtils(unittest.TestCase):
             "csv_few_samples": "test_csv_few_samples.csv",
             "sample": np.array([[2, 2, 2]]),
             "classes": np.array([1]),
-            "full_sample": np.array([[0, 1, 2, 3, 4, 5, 6]]),
-            "given_features": np.array([2, 4, 6]),
-            "given_features_not_sorted": np.array([6, 0, 2]),
-            "given_features_full": np.array([5, 1, 2, 0, 6, 4, 3]),
-            "total_features_num": 7,
-            "default_value": 0,
             "random_seed": 0,
             "train_ratio": [1, 2, 3, 4],
             "completed_features_inf": np.array([[np.inf, np.inf, 2, np.inf, 2, np.inf, 2]]),
@@ -311,27 +283,26 @@ class TestScoreFunction(unittest.TestCase):
 class TestGraphSearchAlgorithm(unittest.TestCase):
     # tests functions
     def test_initialization(self):
-        consts = self._get_consts()
-        algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
+        algorithm = self._get_algorithm_instance()
         return type(algorithm) == GraphSearchAlgorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit, '__call__')
 
     def test_build_graph(self):
         consts = self._get_consts()
-        algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
+        algorithm = self._get_algorithm_instance()
         for given_features in consts["given_features"]:
             features_costs = [i for i in range(len(get_complementary_set(range(consts["total_features"]), given_features)))]
-            algorithm._build_graph(total_features=consts["total_features"], given_features=given_features, features_costs=features_costs)
-            self.assertTrue(algorithm._graph.nodes, consts[f'expected_nodes_{given_features}'])
-            self.assertTrue(algorithm._graph.edges, consts[f'expected_nodes_{given_features}'])
+            algorithm.fit(TrainSamples(consts["sample"], consts["class"]), features_costs)
+            algorithm._build_graph(total_features=consts["total_features"], given_features=given_features)
+            self.assertTrue(list(algorithm._graph.nodes) == consts[f'expected_nodes_{given_features}'])
+            self.assertTrue(list(algorithm._graph.edges) == consts[f'expected_edges_{given_features}'])
             self.assertTrue(list(algorithm._graph.nodes)[0] == frozenset(given_features))
             self.assertTrue(list(algorithm._graph.nodes)[-1] == frozenset(range(consts["total_features"])))
 
-    # TODO- finish this test
     def test_buy_features(self):
         print("\n")
         consts = self._get_consts()
         train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"])
-        algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
+        algorithm = self._get_algorithm_instance()
         algorithm.fit(train_samples, consts["features_costs"])
         print(algorithm._buy_features(consts["given_features"][0], consts["maximal_cost"]))
 
@@ -346,17 +317,14 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
     # private functions
     @staticmethod
     def _get_consts() -> dict:
-        def simple_heuristic(a, b) -> float:
-            print(a)
-            print(b)
-            print("\n")
-            print("\n")
-            return 0.2
+        class SimpleScore(ScoreFunction):
+            def _execute_function(self, train_samples: TrainSamples, given_features: list[int], new_feature: int, costs_list: list[float]) -> float:
+                return 0.2
 
         return {
             "learning_algorithm": KNeighborsClassifier(n_neighbors=1),
             "search_algorithm": astar_path,
-            "heuristic": simple_heuristic,
+            "score_function": SimpleScore,
             "numeric_samples_path": "test_csv_functions.csv",
             # "strings_samples_path": "test_csv_with_strings.csv",
             "train_ratio": 1,
@@ -364,6 +332,8 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
             "given_features": [[0], [3], [2, 3]],
             "maximal_cost": 10,
             "total_features": 4,
+            "sample": np.array([1, 2, 3, 4]),
+            "class": np.array(1),
             "expected_nodes_[0]": [frozenset({0.0}), frozenset({0, 1}), frozenset({0, 2}), frozenset({0, 3}),
                                    frozenset({0, 1, 2}), frozenset({0, 1, 3}), frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})],
             "expected_edges_[0]": [(frozenset({0.0}), frozenset({0, 1})), (frozenset({0.0}), frozenset({0, 2})),
@@ -383,6 +353,10 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
             "expected_edges_[2, 3]": [(frozenset({2.0, 3.0}), frozenset({0, 2, 3})), (frozenset({2.0, 3.0}), frozenset({1, 2, 3})),
                                       (frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})), (frozenset({1, 2, 3}), frozenset({0, 1, 2, 3}))]
         }
+
+    def _get_algorithm_instance(self) -> GraphSearchAlgorithm:
+        consts = self._get_consts()
+        return GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["score_function"])
 
 
 if __name__ == '__main__':

@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sklearn
 import sklearn.preprocessing as pre
+import abc
 
 from typing import Callable, Tuple, Union, Optional
 from dataclasses import dataclass
@@ -143,28 +144,3 @@ def normalize_data(data):
     :return: normalized data.
     """
     return pre.normalize(data, axis=0)
-
-
-# deprecated
-def complete_features(samples: Sample, given_features: list[int], total_features_num: int,
-                      default_value: Optional[float] = np.inf) -> Sample:
-    """
-    expands each of the given samples to size total_features_num by placing default_value in all the places which are
-    not in given_features.
-    samples has to be arranged according to given_features- the function sets the first value in sample to the first
-    index in given_features in the new expanded sample.
-    given_features isn't required to be sorted.
-    total_features_num has to be equal or above than the size of sample and given_features.
-    :param samples: given samples for expanding.
-    :param given_features: list of the indices of the chosen features.
-    :param total_features_num: the number to be expanded to.
-    :param default_value: the default value to place in all the places which are not in given_features. default value is inf.
-    :return expanded sample of shape (n_samples, total_features_num).
-    """
-    expanded_samples = []
-    for sample in samples:
-        expanded_sample = [default_value for _ in range(total_features_num)]
-        for feature_idx, feature_value in zip(given_features, sample):
-            expanded_sample[feature_idx] = feature_value
-        expanded_samples.append(expanded_sample)
-    return np.array(expanded_samples)
