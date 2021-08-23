@@ -4,8 +4,8 @@ This module contains graph search algorithms.
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 from General.utils import *
-import networkx as nx
 from more_itertools import powerset
+import inspect
 
 from LearningAlgorithms.abstract_algorithm import SequenceAlgorithm
 from General.score import ScoreFunction
@@ -24,16 +24,19 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
     """
     # Public Methods
     def __init__(self, learning_algorithm: sklearn.base.ClassifierMixin, search_algorithm: nx.algorithms,
-                 score_function: ScoreFunction, alpha_for_score_function: Optional[float] = 1):
+                 score_function: ScoreFunction, algorithm_method: Optional[str] = "dijkstra",
+                 alpha_for_score_function: Optional[float] = 1):
         """
         Init function for GraphSearchAlgorithm algorithm.
         :param learning_algorithm: sklearn's classifier. the function saves it and uses it later.
         :param search_algorithm: nx.algorithm for performing search on graph.
         :param score_function: ScoreFunction object for calculating the weights on the edges.
+        :param algorithm_method: (Optional) the algorithm to use to compute the path. supported options: ‘dijkstra’, ‘bellman-ford’.
         :param (Optional) alpha_for_score_function: alpha parameter for the ScoreFunction.
         """
         super().__init__(learning_algorithm)
         self._search_algorithm = search_algorithm
+        self._algorithm_method = algorithm_method
         self._score_function = score_function(learning_algorithm=learning_algorithm, alpha=alpha_for_score_function)
         self._graph = None
 
@@ -47,20 +50,9 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
         :param maximal_cost: the maximum available cost for buying features.
         :return: the updated given features including all the chosen features.
         """
-        self._build_graph(total_features=self._train_samples.samples.shape[1], given_features=given_features)
-        path = self._search_algorithm(G=self._graph,
-                                      source=frozenset(given_features),
-                                      target=frozenset(range(self._train_samples.samples.shape[1])),
-                                      heuristic=self._features_costs_heuristic,
-                                      weight="weight")
-        for vertex in range(1, len(path)):
-            added_feature = get_complementary_set(path[vertex], path[vertex-1]).pop()
-            maximal_cost -= self._features_costs[added_feature]
-            if maximal_cost >= 0:
-                given_features.append(added_feature)
-            else:
-                break
-        return given_features
+        self._build_graph(total_features=self._train_samples.get_features_num(), given_features=given_features)
+        path = self._get_shortest_path(given_features)
+        return self._fulfill_features(given_features, path, maximal_cost)
 
     def _build_graph(self, total_features: int, given_features: list[int]):
         """
@@ -90,6 +82,39 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
                                                   costs_list=self._features_costs)
                     edges.append((nodes[source], nodes[target], weight))
         return edges
+
+    def _get_shortest_path(self, given_features: list[int]) -> list[node]:
+        """
+        Executes the searching algorithm.
+        :param given_features: list of the indices of the chosen features.
+        :return: list of nodes in a shortest path.
+        """
+        if 'method' in inspect.signature(self._search_algorithm).parameters.keys():
+            return self._search_algorithm(G=self._graph,
+                                          source=frozenset(given_features),
+                                          target=frozenset(range(self._train_samples.get_features_num())),
+                                          method=self._algorithm_method,
+                                          weight="weight")
+        return self._search_algorithm(G=self._graph,
+                                      source=frozenset(given_features),
+                                      target=frozenset(range(self._train_samples.get_features_num())),
+                                      heuristic=self._features_costs_heuristic,
+                                      weight="weight")
+
+    def _fulfill_features(self, given_features: list[int], path: list[node], maximal_cost: float) -> list[int]:
+        """
+        Returns the features in the shortest path that their costs are not above the maximal costs.
+        :param path: list of nodes in a shortest path.
+        :return: the updated given features including all the chosen features.
+        """
+        for vertex in range(1, len(path)):
+            added_feature = get_complementary_set(path[vertex], path[vertex-1]).pop()
+            maximal_cost -= self._features_costs[added_feature]
+            if maximal_cost >= 0:
+                given_features.append(added_feature)
+            else:
+                break
+        return given_features
 
     def _features_costs_heuristic(self, node1: node, node2: node) -> float:
         """
