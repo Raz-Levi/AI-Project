@@ -6,6 +6,7 @@ Utils For The Project
 
 import pandas as pd
 import numpy as np
+import networkx as nx
 import matplotlib.pyplot as plt
 import sklearn
 import sklearn.preprocessing as pre
@@ -20,16 +21,29 @@ Sample = np.array
 Classes = np.array
 
 
-@dataclass
-class TrainSamples:
-    samples: np.array  # Training data- shape (n_samples, n_features), i.e samples are in the rows.
-    classes: Classes  # Target values- shape (n_samples,).
+class Samples(object):
+    """
+    Generic class for batch of samples.
+    """
+    def __init__(self, train_samples: np.array, train_classes: Classes):
+        self.samples = train_samples  # Data- shape (n_samples, n_features), i.e samples are in the rows.
+        self.classes = train_classes  # Target values- shape (n_samples,).
+
+    def get_features_num(self):
+        """
+        :return: total features number of the samples in the batch.
+        """
+        return self.samples.shape[1]
+
+    def get_samples_num(self):
+        """
+        :return: number of the all samples in the batch.
+        """
+        return self.samples.shape[0]
 
 
-@dataclass
-class TestSamples:
-    samples: np.array  # Test data- shape (n_samples, n_features), i.e samples are in the rows.
-    classes: Classes  # Target values- shape (n_samples,) for computing the accuracy.
+TrainSamples = Samples
+TestSamples = Samples
 
 
 """"""""""""""""""""""""""""""""""""""""""" Methods """""""""""""""""""""""""""""""""""""""""""

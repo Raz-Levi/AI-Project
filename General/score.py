@@ -54,7 +54,7 @@ class ScoreFunctionA(ScoreFunction):
 
     @staticmethod
     def _get_correlation_to_feature(feature1, feature2, train_samples):
-        return abs(np.correlate(feature1, train_samples.samples[feature2])[0])
+        return np.abs(np.correlate(feature1, train_samples.samples[feature2])[0])
 
 
 class ScoreFunctionB(ScoreFunction):

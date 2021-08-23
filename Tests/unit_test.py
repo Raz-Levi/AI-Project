@@ -7,6 +7,7 @@ import unittest
 from General.utils import *
 from sklearn.neighbors import KNeighborsClassifier
 from networkx.algorithms.shortest_paths.astar import astar_path
+from networkx.algorithms.shortest_paths.generic import shortest_path
 
 from General.score import ScoreFunction, ScoreFunctionA, ScoreFunctionB
 from LearningAlgorithms.abstract_algorithm import LearningAlgorithm
@@ -21,7 +22,7 @@ class TestUtils(unittest.TestCase):
     # tests functions
     def test_get_samples_from_csv(self):
         consts = self._get_consts()
-        self._test_get_samples_from_csv(path=consts["csv_path"], expected_matrix=consts["full_expected_matrix"])
+        self._test_get_samples_from_csv(path=consts["numeric_samples_path"], expected_matrix=consts["full_expected_matrix"])
 
     def test_categorical_to_numeric(self):
         consts, categories = self._get_consts(), {}
@@ -38,7 +39,7 @@ class TestUtils(unittest.TestCase):
     def test_get_dataset(self):
         consts = self._get_consts()
         for ratio in consts["train_ratio"]:
-            self._test_get_dataset(path=consts["csv_path"], expected_matrix=consts["full_expected_matrix"], train_ratio=ratio, random_seed=consts["random_seed"])
+            self._test_get_dataset(path=consts["numeric_samples_path"], expected_matrix=consts["full_expected_matrix"], train_ratio=ratio, random_seed=consts["random_seed"])
             self._test_get_dataset(path=consts["csv_with_strings_path"], expected_matrix=consts["csv_strings_expected_matrix"], train_ratio=ratio, random_seed=consts["random_seed"])
 
     def test_declarations(self):
@@ -63,14 +64,14 @@ class TestUtils(unittest.TestCase):
         for col in range(expected_matrix.shape[1]):
             train_samples, test_samples = get_dataset(path=path, class_index=col, train_ratio=train_ratio, random_seed=random_seed, shuffle=False)
             tested_rows = list(range(expected_matrix.shape[0]))[-train_ratio:]
-            complementary_list = list(get_complementary_set(range(train_samples.samples.shape[0]), tested_rows))
+            complementary_list = list(get_complementary_set(range(train_samples.get_samples_num()), tested_rows))
             self.assertTrue(self._compare_samples(train_samples.samples, train_samples.classes, expected_matrix[complementary_list, :], col))
             self.assertTrue(self._compare_samples(test_samples.samples, test_samples.classes, expected_matrix[tested_rows, :], col))
 
     @staticmethod
     def _get_consts() -> dict:
         return {
-            "csv_path": "test_csv_functions.csv",
+            "numeric_samples_path": "test_csv_functions.csv",
             "csv_with_strings_path": "test_csv_with_strings.csv",
             "csv_few_samples": "test_csv_few_samples.csv",
             "sample": np.array([[2, 2, 2]]),
@@ -137,7 +138,7 @@ class TestLearningAlgorithm(unittest.TestCase):
                 self._total_features_num = None
 
             def fit(self, train_samples: TrainSamples, features_costs: list[float]):
-                self._total_features_num = train_samples.samples.shape[1]
+                self._total_features_num = train_samples.get_features_num()
 
             def predict(self, sample: TestSamples, given_feature: list[int], maximal_cost: float) -> int:
                 return True
@@ -301,18 +302,20 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
     def test_features_costs_heuristic(self):
         consts = self._get_consts()
         algorithm = self._get_algorithm_instance()
-        algorithm.fit(TrainSamples(consts["sample"], consts["class"]), consts["features_costs_4"])
+        train_samples = TrainSamples(consts["sample"], consts["class"])
+        algorithm.fit(train_samples, list(range(1, train_samples.get_features_num() + 1)))
         for tested_nodes in consts["features_cost_heuristic"]:
             self.assertEqual(algorithm._features_costs_heuristic(tested_nodes[0], tested_nodes[1]), tested_nodes[2])
 
     def test_buy_features(self):
         consts = self._get_consts()
         train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"][0])
+        features_costs = list(range(1, train_samples.get_features_num() + 1))
         algorithm = self._get_algorithm_instance()
-        algorithm.fit(train_samples, consts["features_costs_6"])
+        algorithm.fit(train_samples, features_costs)
         for given_features in consts["given_features"]:
             new_given_features = algorithm._buy_features(given_features[:], consts["maximal_cost_big"])
-            self.assertEqual(sorted(new_given_features), list(range(train_samples.samples.shape[1])))
+            self.assertEqual(sorted(new_given_features), list(range(train_samples.get_features_num())))
         new_given_features = algorithm._buy_features(consts["given_features"][0], consts["maximal_cost_small"])
         self.assertEqual(new_given_features, consts["given_features_maximal_cost_small"])
 
@@ -320,32 +323,28 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
         consts = self._get_consts()
         for train_ratio in consts["train_ratio"]:
             train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=train_ratio)
-            algorithm = self._get_algorithm_instance()
-            algorithm_score_function = self._get_algorithm_instance(ScoreFunctionB)
-            algorithm.fit(train_samples, consts["features_costs_6"])
-            algorithm_score_function.fit(train_samples, consts["features_costs_6"])
+            features_costs = list(range(1, train_samples.get_features_num() + 1))
+            simple_algorithm = self._get_algorithm_instance()
+            score_function_algorithm = self._get_algorithm_instance(score_function=ScoreFunctionB)
+            dijkstra_algorithm = self._get_algorithm_instance(search_algorithm=shortest_path)
+            simple_algorithm.fit(train_samples, features_costs)
+            score_function_algorithm.fit(train_samples, features_costs)
+            dijkstra_algorithm.fit(train_samples, features_costs)
             for given_features in consts["given_features"]:
-                predicted_classes = algorithm.predict(train_samples.samples, given_features, consts["maximal_cost_big"])
-                predicted_classes_score_function = algorithm_score_function.predict(train_samples.samples, given_features, consts["maximal_cost_big"])
+                predicted_classes = simple_algorithm.predict(train_samples.samples, given_features, consts["maximal_cost_big"])
+                predicted_classes_score_function = score_function_algorithm.predict(train_samples.samples, given_features, consts["maximal_cost_big"])
+                predicted_classes_algorithm_dijkstra = dijkstra_algorithm.predict(train_samples.samples, given_features, consts["maximal_cost_big"])
                 self.assertTrue(np.array_equal(predicted_classes, train_samples.classes))
                 self.assertTrue(np.array_equal(predicted_classes_score_function, train_samples.classes))
-
+                self.assertTrue(np.array_equal(predicted_classes_algorithm_dijkstra, train_samples.classes))
 
     # private functions
     @staticmethod
     def _get_consts() -> dict:
-        class SimpleScore(ScoreFunction):
-            def _execute_function(self, train_samples: TrainSamples, given_features: list[int], new_feature: int, costs_list: list[float]) -> float:
-                return 0.2
-
         return {
             "learning_algorithm": KNeighborsClassifier(n_neighbors=1),
-            "search_algorithm": astar_path,
-            "score_function": SimpleScore,
             "numeric_samples_path": "test_csv_functions.csv",
             "train_ratio": [1, 2, 3, 4],
-            "features_costs_4": [1, 2, 3, 4],
-            "features_costs_6": [1, 2, 3, 4, 5, 6],
             "given_features": [[0], [3], [2, 3]],
             "given_features_maximal_cost_small": [0, 5],
             "maximal_cost_big": 1000,
@@ -379,9 +378,13 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
                                       (frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})), (frozenset({1, 2, 3}), frozenset({0, 1, 2, 3}))]
         }
 
-    def _get_algorithm_instance(self, score_function: Optional[ScoreFunction] = None) -> GraphSearchAlgorithm:
+    def _get_algorithm_instance(self, score_function: Optional[ScoreFunction] = None, search_algorithm: nx.algorithms = astar_path) -> GraphSearchAlgorithm:
+        class SimpleScore(ScoreFunction):
+            def _execute_function(self, train_samples: TrainSamples, given_features: list[int], new_feature: int, costs_list: list[float]) -> float:
+                return 0.2
+
         consts = self._get_consts()
-        return GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["score_function"] if score_function is None else score_function)
+        return GraphSearchAlgorithm(consts["learning_algorithm"], search_algorithm, SimpleScore if score_function is None else score_function)
 
 
 if __name__ == '__main__':

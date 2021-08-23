@@ -46,7 +46,7 @@ class MaxVarianceAlgorithm(SequenceAlgorithm):
         :return: the updated given features including all the chosen features.
         """
         new_given_features = given_features
-        available_features = list(set(range(self._train_samples.samples.shape[1])) - set(given_features))
+        available_features = list(set(range(self._train_samples.get_features_num())) - set(given_features))
         while len(self._features_by_corr) and len(self._features_by_corr) and maximal_cost:
             chosen_feature = self._features_by_corr.pop()
             if chosen_feature not in available_features:
