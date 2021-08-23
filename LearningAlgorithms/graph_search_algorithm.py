@@ -53,15 +53,14 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
                                       target=frozenset(range(self._train_samples.samples.shape[1])),
                                       heuristic=self._features_costs_heuristic,
                                       weight="weight")
-        # TODO- continue this
-        # for node in range(1, len(path)):
-        #     added_feature = list(get_complementary_list(path[node-1], path[node]))[0]
-        #     maximal_cost -= self._features_costs[added_feature - 1]  # TODO check -1
-        #     if maximal_cost >= 0:
-        #         given_features.append(added_feature)
-        #     else:
-        #         break
-        # return given_features
+        for vertex in range(1, len(path)):
+            added_feature = get_complementary_set(path[vertex], path[vertex-1]).pop()
+            maximal_cost -= self._features_costs[added_feature]
+            if maximal_cost >= 0:
+                given_features.append(added_feature)
+            else:
+                break
+        return given_features
 
     def _build_graph(self, total_features: int, given_features: list[int]):
         """
@@ -69,7 +68,7 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
         :param total_features: number of the entire features in the train set.
         :param given_features: list of the indices of the chosen features.
         """
-        nodes = [frozenset(np.append(sub_set, given_features)) for sub_set in powerset(get_complementary_set(range(total_features), given_features))]
+        nodes = [frozenset(np.append(sub_set, given_features).astype(np.int)) for sub_set in powerset(get_complementary_set(range(total_features), given_features))]
         self._graph = nx.DiGraph()
         self._graph.add_nodes_from(nodes)
         self._graph.add_weighted_edges_from(self._get_edges(nodes))
@@ -100,5 +99,4 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
         :param node2: the target of the given edge.
         :return: costs of all the features that are not in node1 and node2.
         """
-        complementary_features = get_complementary_set(range(self._train_samples.samples.shape[1]), node1.union(node2))
-        return sum(self._features_costs[feature] for feature in complementary_features)
+        return sum(self._features_costs[feature] for feature in get_complementary_set(node2, node1))

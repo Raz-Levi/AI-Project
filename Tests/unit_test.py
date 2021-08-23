@@ -115,7 +115,7 @@ class TestLearningAlgorithm(unittest.TestCase):
         simple_algorithm = self._get_instance()
         self.assertTrue(simple_algorithm._get_total_features_num() is None)
         simple_algorithm.fit(consts["train_samples"], consts["features_costs"])
-        self.assertTrue(simple_algorithm._get_total_features_num() == consts["total_features_num"])
+        self.assertEqual(simple_algorithm._get_total_features_num(), consts["total_features_num"])
 
     # private functions
     @staticmethod
@@ -293,26 +293,43 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
             features_costs = [i for i in range(len(get_complementary_set(range(consts["total_features"]), given_features)))]
             algorithm.fit(TrainSamples(consts["sample"], consts["class"]), features_costs)
             algorithm._build_graph(total_features=consts["total_features"], given_features=given_features)
-            self.assertTrue(list(algorithm._graph.nodes) == consts[f'expected_nodes_{given_features}'])
-            self.assertTrue(list(algorithm._graph.edges) == consts[f'expected_edges_{given_features}'])
-            self.assertTrue(list(algorithm._graph.nodes)[0] == frozenset(given_features))
-            self.assertTrue(list(algorithm._graph.nodes)[-1] == frozenset(range(consts["total_features"])))
+            self.assertEqual(list(algorithm._graph.nodes), consts[f'expected_nodes_{given_features}'])
+            self.assertEqual(list(algorithm._graph.edges), consts[f'expected_edges_{given_features}'])
+            self.assertEqual(list(algorithm._graph.nodes)[0], frozenset(given_features))
+            self.assertEqual(list(algorithm._graph.nodes)[-1], frozenset(range(consts["total_features"])))
+
+    def test_features_costs_heuristic(self):
+        consts = self._get_consts()
+        algorithm = self._get_algorithm_instance()
+        algorithm.fit(TrainSamples(consts["sample"], consts["class"]), consts["features_costs_4"])
+        for tested_nodes in consts["features_cost_heuristic"]:
+            self.assertEqual(algorithm._features_costs_heuristic(tested_nodes[0], tested_nodes[1]), tested_nodes[2])
 
     def test_buy_features(self):
-        print("\n")
         consts = self._get_consts()
-        train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"])
+        train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"][0])
         algorithm = self._get_algorithm_instance()
-        algorithm.fit(train_samples, consts["features_costs"])
-        print(algorithm._buy_features(consts["given_features"][0], consts["maximal_cost"]))
+        algorithm.fit(train_samples, consts["features_costs_6"])
+        for given_features in consts["given_features"]:
+            new_given_features = algorithm._buy_features(given_features[:], consts["maximal_cost_big"])
+            self.assertEqual(sorted(new_given_features), list(range(train_samples.samples.shape[1])))
+        new_given_features = algorithm._buy_features(consts["given_features"][0], consts["maximal_cost_small"])
+        self.assertEqual(new_given_features, consts["given_features_maximal_cost_small"])
 
-    # TODO- finish this test
-    # def test_graph_search_algorithm(self):
-    #     consts = self._get_consts()
-    #     train_samples, test_samples = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"])
-    #     algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
-    #     algorithm.fit(train_samples, consts["features_costs"])
-    #     algorithm.predict(test_samples, consts["given_features"][0], consts["maximal_cost"])
+    def test_graph_search_algorithm(self):
+        consts = self._get_consts()
+        for train_ratio in consts["train_ratio"]:
+            train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=train_ratio)
+            algorithm = self._get_algorithm_instance()
+            algorithm_score_function = self._get_algorithm_instance(ScoreFunctionB)
+            algorithm.fit(train_samples, consts["features_costs_6"])
+            algorithm_score_function.fit(train_samples, consts["features_costs_6"])
+            for given_features in consts["given_features"]:
+                predicted_classes = algorithm.predict(train_samples.samples, given_features, consts["maximal_cost_big"])
+                predicted_classes_score_function = algorithm_score_function.predict(train_samples.samples, given_features, consts["maximal_cost_big"])
+                self.assertTrue(np.array_equal(predicted_classes, train_samples.classes))
+                self.assertTrue(np.array_equal(predicted_classes_score_function, train_samples.classes))
+
 
     # private functions
     @staticmethod
@@ -326,14 +343,22 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
             "search_algorithm": astar_path,
             "score_function": SimpleScore,
             "numeric_samples_path": "test_csv_functions.csv",
-            # "strings_samples_path": "test_csv_with_strings.csv",
-            "train_ratio": 1,
-            "features_costs": [1, 2, 3, 4, 5, 6],
+            "train_ratio": [1, 2, 3, 4],
+            "features_costs_4": [1, 2, 3, 4],
+            "features_costs_6": [1, 2, 3, 4, 5, 6],
             "given_features": [[0], [3], [2, 3]],
-            "maximal_cost": 10,
+            "given_features_maximal_cost_small": [0, 5],
+            "maximal_cost_big": 1000,
+            "maximal_cost_small": 10,
             "total_features": 4,
-            "sample": np.array([1, 2, 3, 4]),
-            "class": np.array(1),
+            "sample": np.array([[1, 2, 3, 4], [5, 6, 7, 8]]),
+            "class": np.array([[1, 0]]),
+            "shortest_path": [frozenset({0}), frozenset({0, 5}), frozenset({0, 4, 5}), frozenset({0, 3, 4, 5}),
+                              frozenset({0, 2, 3, 4, 5}), frozenset({0, 1, 2, 3, 4, 5})],
+            "features_cost_heuristic": [(frozenset({0}), frozenset({0}), 0), (frozenset({0}), frozenset({0, 1}), 2),
+                                        (frozenset({0}), frozenset({0, 2}), 3), (frozenset({0}), frozenset({0, 3}), 4),
+                                        (frozenset({0}), frozenset({0, 1, 2, 3}), 9), (frozenset({1}), frozenset({1}), 0),
+                                        (frozenset({0, 1, 2}), frozenset({0, 1, 2, 3}), 4)],
             "expected_nodes_[0]": [frozenset({0.0}), frozenset({0, 1}), frozenset({0, 2}), frozenset({0, 3}),
                                    frozenset({0, 1, 2}), frozenset({0, 1, 3}), frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})],
             "expected_edges_[0]": [(frozenset({0.0}), frozenset({0, 1})), (frozenset({0.0}), frozenset({0, 2})),
@@ -354,9 +379,9 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
                                       (frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})), (frozenset({1, 2, 3}), frozenset({0, 1, 2, 3}))]
         }
 
-    def _get_algorithm_instance(self) -> GraphSearchAlgorithm:
+    def _get_algorithm_instance(self, score_function: Optional[ScoreFunction] = None) -> GraphSearchAlgorithm:
         consts = self._get_consts()
-        return GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["score_function"])
+        return GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["score_function"] if score_function is None else score_function)
 
 
 if __name__ == '__main__':

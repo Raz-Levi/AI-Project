@@ -20,12 +20,7 @@ class ScoreFunction(abc.ABC):
         self._alpha = alpha
 
     def __call__(self, *args, **kwargs):
-        # train_samples = args[0]
-        # given_features = args[1]
-        # new_feature = args[2]
-        # costs_list = args[3]
-
-        return self._execute_function(*args, **kwargs) # TODO- check if we can pass args directly to _execute_function
+        return self._execute_function(*args, **kwargs)
 
     # Private Methods
     @abc.abstractmethod
@@ -54,7 +49,7 @@ class ScoreFunctionA(ScoreFunction):
         return frac / price
 
     def _get_correlation_to_given_features(self, train_samples, new_feature, given_features):
-        return np.mean([self._get_correlation_to_feature(train_samples.samples[f], new_feature, train_samples)
+        return np.mean([self._get_correlation_to_feature(train_samples.samples[int(f)], new_feature, train_samples)
                         for f in given_features])
 
     @staticmethod
