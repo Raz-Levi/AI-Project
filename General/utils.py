@@ -9,7 +9,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sklearn
 import sklearn.preprocessing as pre
-import scipy.stats as stats
 
 from typing import Callable, Tuple, Union, Optional
 from dataclasses import dataclass
@@ -169,77 +168,3 @@ def complete_features(samples: Sample, given_features: list[int], total_features
             expanded_sample[feature_idx] = feature_value
         expanded_samples.append(expanded_sample)
     return np.array(expanded_samples)
-
-
-""""""""""""""""""""""""""""""""""""""""""" Score Function """""""""""""""""""""""""""""""""""""""""""
-
-
-def get_correlation_to_feature(dataset, target, feature):
-    """
-    get dataset, feature and target feature, and check the feature correlation to the target feature.
-    need to get normalized dataset !
-    :param dataset: the dataset we are working on.
-    :param target: the target feature index.
-    :param feature : the index of the feature we want to check how correlated it to target feature.
-    :return: the correlation between two features.
-    """
-    return abs(np.correlate(dataset[:, target], dataset[:, feature])[0])
-
-
-def get_correlation_to_other_features(dataset, features, feature):
-    """
-    get dataset, feature and set of given features, and check the feature correlation to the whole set.
-    need to get normalized dataset !
-    :param dataset: the dataset we are working on.
-    :param features: set of given features(indexes).
-    :param feature : the index of the feature we want to check how correlated it to set of given features.
-    :return: the correlation between two features.
-    """
-    return np.mean([get_correlation_to_feature(dataset, f, feature) for f in features])
-
-
-def get_price_score(feature, costs_list):
-    """
-    get feature index and list of costs, and return the feature cost.
-    :param feature: the index of the wanted feature.
-    :param costs_list: list that include all the feature's costs.
-    :return: the given feature cost.
-    """
-    return costs_list[feature]
-
-
-def get_certainty(dataset, target, features, feature, learning_algo):
-    """
-    return the level of the certainty according to the theory we explain in the PDF.
-    :param dataset: the dataset we are working on.
-    :param target: the target feature index.
-    :param features: set of given features(indexes).
-    :param feature: the index of the wanted feature.
-    :param learning_algo: untrained classifier.
-    :return: the level of the certainty.
-    """
-    new_features = np.append(features, [feature])
-    data = pd.DataFrame(dataset)
-    learning_algo.fit(data[new_features], data[target])
-    probabilities = learning_algo.predict_proba(data[new_features])
-    certainty = stats.entropy(probabilities[0], probabilities[1])
-    return 1 - certainty
-
-
-def score_function_a(dataset, features, feature, target, costs_list, alpha=1):
-    """
-    return the feature score according to the theory we explain in the PDF.
-    """
-    price = get_price_score(feature, costs_list)
-    frac = (get_correlation_to_feature(dataset, target, feature) /
-            alpha * get_correlation_to_other_features(dataset, features, feature))
-    return frac / price
-
-
-def score_function_b(dataset, features, feature, target, costs_list, learning_algo=None):
-    """
-    return the feature score according to the theory we explain in the PDF.
-    """
-    certainty = get_certainty(dataset, target, features, feature, learning_algo)
-    price = get_price_score(feature, costs_list)
-    return certainty / price
