@@ -1,6 +1,8 @@
 """
 Automation Tests For The Project
 """
+from General.score import ScoreFunctionA
+from LearningAlgorithms.genetic_algorithm import GeneticAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 import unittest
@@ -11,7 +13,7 @@ from networkx.algorithms.shortest_paths.astar import astar_path
 from LearningAlgorithms.abstract_algorithm import LearningAlgorithm
 from LearningAlgorithms.naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
 from LearningAlgorithms.mid_algorithm import MaxVarianceAlgorithm
-from LearningAlgorithms.graph_search_algorithm import GraphSearchAlgorithm
+#from LearningAlgorithms.graph_search_algorithm import GraphSearchAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""" Tests  """""""""""""""""""""""""""""""""""""""""
 
@@ -309,81 +311,109 @@ class TestNaiveAlgorithm(unittest.TestCase):
         return test_result, algorithm
 
 
-class TestGraphSearchAlgorithm(unittest.TestCase):
+class TestGeneticAlgorithm(unittest.TestCase):
     # tests functions
     def test_initialization(self):
-        consts = self._get_consts()
-        algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
-        return type(algorithm) == GraphSearchAlgorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit, '__call__')
+        algorithm = GeneticAlgorithm(10, KNeighborsClassifier(n_neighbors=1), ScoreFunctionA())
+        return type(algorithm) == GeneticAlgorithm
 
-    def test_build_graph(self):
-        consts = self._get_consts()
-        algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
-        for given_features in consts["given_features"]:
-            features_costs = [i for i in range(len(get_complementary_set(range(consts["total_features"]), given_features)))]
-            algorithm._build_graph(total_features=consts["total_features"], given_features=given_features, features_costs=features_costs)
-            self.assertTrue(algorithm._graph.nodes, consts[f'expected_nodes_{given_features}'])
-            self.assertTrue(algorithm._graph.edges, consts[f'expected_nodes_{given_features}'])
-            self.assertTrue(list(algorithm._graph.nodes)[0] == frozenset(given_features))
-            self.assertTrue(list(algorithm._graph.nodes)[-1] == frozenset(range(consts["total_features"])))
-
-    # TODO- finish this test
     def test_buy_features(self):
-        print("\n")
+        algorithm = GeneticAlgorithm(6, KNeighborsClassifier(n_neighbors=1), ScoreFunctionA())
         consts = self._get_consts()
-        train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"])
-        algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
+        train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"], class_index=12)
         algorithm.fit(train_samples, consts["features_costs"])
-        print(algorithm._buy_features(consts["given_features"][0], consts["maximal_cost"]))
-
-    # TODO- finish this test
-    # def test_graph_search_algorithm(self):
-    #     consts = self._get_consts()
-    #     train_samples, test_samples = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"])
-    #     algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
-    #     algorithm.fit(train_samples, consts["features_costs"])
-    #     algorithm.predict(test_samples, consts["given_features"][0], consts["maximal_cost"])
+        res = algorithm._buy_features(consts["given_features"][0], consts["maximal_cost"])
+        self.assertTrue(algorithm._is_legal_subset(res))
 
     # private functions
     @staticmethod
     def _get_consts() -> dict:
-        def simple_heuristic(a, b) -> float:
-            print(a)
-            print(b)
-            print("\n")
-            print("\n")
-            return 0.2
-
         return {
             "learning_algorithm": KNeighborsClassifier(n_neighbors=1),
-            "search_algorithm": astar_path,
-            "heuristic": simple_heuristic,
-            "numeric_samples_path": "test_csv_functions.csv",
-            # "strings_samples_path": "test_csv_with_strings.csv",
+            "numeric_samples_path": "heart_failure_clinical_records_dataset.csv",
             "train_ratio": 1,
-            "features_costs": [1, 2, 3, 4, 5, 6],
+            "features_costs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 22, 23],
             "given_features": [[0], [3], [2, 3]],
             "maximal_cost": 10,
-            "total_features": 4,
-            "expected_nodes_[0]": [frozenset({0.0}), frozenset({0, 1}), frozenset({0, 2}), frozenset({0, 3}),
-                                   frozenset({0, 1, 2}), frozenset({0, 1, 3}), frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})],
-            "expected_edges_[0]": [(frozenset({0.0}), frozenset({0, 1})), (frozenset({0.0}), frozenset({0, 2})),
-                                   (frozenset({0.0}), frozenset({0, 3})), (frozenset({0, 1}), frozenset({0, 1, 2})),
-                                   (frozenset({0, 1}), frozenset({0, 1, 3})), (frozenset({0, 2}), frozenset({0, 1, 2})),
-                                   (frozenset({0, 2}), frozenset({0, 2, 3})), (frozenset({0, 3}), frozenset({0, 1, 3})),
-                                   (frozenset({0, 3}), frozenset({0, 2, 3})), (frozenset({0, 1, 2}), frozenset({0, 1, 2, 3})),
-                                   (frozenset({0, 1, 3}), frozenset({0, 1, 2, 3})), (frozenset({0, 2, 3}), frozenset({0, 1, 2, 3}))],
-            "expected_nodes_[3]": [frozenset({3.0}), frozenset({0, 3}), frozenset({1, 3}), frozenset({2, 3}), frozenset({0, 1, 3}),
-                                   frozenset({0, 2, 3}), frozenset({1, 2, 3}), frozenset({0, 1, 2, 3})],
-            "expected_edges_[3]": [(frozenset({3.0}), frozenset({0, 3})), (frozenset({3.0}), frozenset({1, 3})), (frozenset({3.0}),
-                                   frozenset({2, 3})), (frozenset({0, 3}), frozenset({0, 1, 3})), (frozenset({0, 3}), frozenset({0, 2, 3})),
-                                   (frozenset({1, 3}), frozenset({0, 1, 3})), (frozenset({1, 3}), frozenset({1, 2, 3})), (frozenset({2, 3}),
-                                   frozenset({0, 2, 3})), (frozenset({2, 3}), frozenset({1, 2, 3})), (frozenset({0, 1, 3}), frozenset({0, 1, 2, 3})),
-                                   (frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})), (frozenset({1, 2, 3}), frozenset({0, 1, 2, 3}))],
-            "expected_nodes_[2, 3]": [frozenset({2.0, 3.0}), frozenset({0, 2, 3}), frozenset({1, 2, 3}), frozenset({0, 1, 2, 3})],
-            "expected_edges_[2, 3]": [(frozenset({2.0, 3.0}), frozenset({0, 2, 3})), (frozenset({2.0, 3.0}), frozenset({1, 2, 3})),
-                                      (frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})), (frozenset({1, 2, 3}), frozenset({0, 1, 2, 3}))]
-        }
+            "total_features": 12,
+            }
+
+#
+# class TestGraphSearchAlgorithm(unittest.TestCase):
+#     # tests functions
+#     def test_initialization(self):
+#         consts = self._get_consts()
+#         algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
+#         return type(algorithm) == GraphSearchAlgorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit, '__call__')
+#
+#     def test_build_graph(self):
+#         consts = self._get_consts()
+#         algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
+#         for given_features in consts["given_features"]:
+#             features_costs = [i for i in range(len(get_complementary_set(range(consts["total_features"]), given_features)))]
+#             algorithm._build_graph(total_features=consts["total_features"], given_features=given_features, features_costs=features_costs)
+#             self.assertTrue(algorithm._graph.nodes, consts[f'expected_nodes_{given_features}'])
+#             self.assertTrue(algorithm._graph.edges, consts[f'expected_nodes_{given_features}'])
+#             self.assertTrue(list(algorithm._graph.nodes)[0] == frozenset(given_features))
+#             self.assertTrue(list(algorithm._graph.nodes)[-1] == frozenset(range(consts["total_features"])))
+#
+#     # TODO- finish this test
+#     def test_buy_features(self):
+#         print("\n")
+#         consts = self._get_consts()
+#         train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"])
+#         algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
+#         algorithm.fit(train_samples, consts["features_costs"])
+#         print(algorithm._buy_features(consts["given_features"][0], consts["maximal_cost"]))
+#
+#     # TODO- finish this test
+#     # def test_graph_search_algorithm(self):
+#     #     consts = self._get_consts()
+#     #     train_samples, test_samples = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"])
+#     #     algorithm = GraphSearchAlgorithm(consts["learning_algorithm"], consts["search_algorithm"], consts["heuristic"])
+#     #     algorithm.fit(train_samples, consts["features_costs"])
+#     #     algorithm.predict(test_samples, consts["given_features"][0], consts["maximal_cost"])
+#
+#     # private functions
+#     @staticmethod
+#     def _get_consts() -> dict:
+#         def simple_heuristic(a, b) -> float:
+#             print(a)
+#             print(b)
+#             print("\n")
+#             print("\n")
+#             return 0.2
+#
+#         return {
+#             "learning_algorithm": KNeighborsClassifier(n_neighbors=1),
+#             "search_algorithm": astar_path,
+#             "heuristic": simple_heuristic,
+#             "numeric_samples_path": "test_csv_functions.csv",
+#             # "strings_samples_path": "test_csv_with_strings.csv",
+#             "train_ratio": 1,
+#             "features_costs": [1, 2, 3, 4, 5, 6],
+#             "given_features": [[0], [3], [2, 3]],
+#             "maximal_cost": 10,
+#             "total_features": 4,
+#             "expected_nodes_[0]": [frozenset({0.0}), frozenset({0, 1}), frozenset({0, 2}), frozenset({0, 3}),
+#                                    frozenset({0, 1, 2}), frozenset({0, 1, 3}), frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})],
+#             "expected_edges_[0]": [(frozenset({0.0}), frozenset({0, 1})), (frozenset({0.0}), frozenset({0, 2})),
+#                                    (frozenset({0.0}), frozenset({0, 3})), (frozenset({0, 1}), frozenset({0, 1, 2})),
+#                                    (frozenset({0, 1}), frozenset({0, 1, 3})), (frozenset({0, 2}), frozenset({0, 1, 2})),
+#                                    (frozenset({0, 2}), frozenset({0, 2, 3})), (frozenset({0, 3}), frozenset({0, 1, 3})),
+#                                    (frozenset({0, 3}), frozenset({0, 2, 3})), (frozenset({0, 1, 2}), frozenset({0, 1, 2, 3})),
+#                                    (frozenset({0, 1, 3}), frozenset({0, 1, 2, 3})), (frozenset({0, 2, 3}), frozenset({0, 1, 2, 3}))],
+#             "expected_nodes_[3]": [frozenset({3.0}), frozenset({0, 3}), frozenset({1, 3}), frozenset({2, 3}), frozenset({0, 1, 3}),
+#                                    frozenset({0, 2, 3}), frozenset({1, 2, 3}), frozenset({0, 1, 2, 3})],
+#             "expected_edges_[3]": [(frozenset({3.0}), frozenset({0, 3})), (frozenset({3.0}), frozenset({1, 3})), (frozenset({3.0}),
+#                                    frozenset({2, 3})), (frozenset({0, 3}), frozenset({0, 1, 3})), (frozenset({0, 3}), frozenset({0, 2, 3})),
+#                                    (frozenset({1, 3}), frozenset({0, 1, 3})), (frozenset({1, 3}), frozenset({1, 2, 3})), (frozenset({2, 3}),
+#                                    frozenset({0, 2, 3})), (frozenset({2, 3}), frozenset({1, 2, 3})), (frozenset({0, 1, 3}), frozenset({0, 1, 2, 3})),
+#                                    (frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})), (frozenset({1, 2, 3}), frozenset({0, 1, 2, 3}))],
+#             "expected_nodes_[2, 3]": [frozenset({2.0, 3.0}), frozenset({0, 2, 3}), frozenset({1, 2, 3}), frozenset({0, 1, 2, 3})],
+#             "expected_edges_[2, 3]": [(frozenset({2.0, 3.0}), frozenset({0, 2, 3})), (frozenset({2.0, 3.0}), frozenset({1, 2, 3})),
+#                                       (frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})), (frozenset({1, 2, 3}), frozenset({0, 1, 2, 3}))]
+#         }
 
 
 if __name__ == '__main__':

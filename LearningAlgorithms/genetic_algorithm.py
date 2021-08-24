@@ -3,13 +3,18 @@ This module contains a search algorithm based on a genetic algorithm
 """
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
-from LearningAlgorithms.abstract_algorithm import SequenceAlgorithm
-import sklearn
+import random
+from typing import List
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
 import numpy as np
+import pandas as pd
+import sklearn
+from deap import creator, base, tools, algorithms
 from General.score import ScoreFunction
-
-from itertools import chain, combinations
-from General.utils import get_complementary_set
+import General.utils
+from LearningAlgorithms.abstract_algorithm import SequenceAlgorithm
+from sklearn.model_selection import train_test_split
 
 """"""""""""""""""""""""""""""""""""""""""" Classes """""""""""""""""""""""""""""""""""""""""""
 
@@ -21,37 +26,182 @@ class GeneticAlgorithm(SequenceAlgorithm):
 
     def __init__(self, number_of_features: int, learning_algorithm: sklearn.base.ClassifierMixin,
                  score_function: ScoreFunction, alpha_for_score_function: [float] = 1):
+
         super().__init__(learning_algorithm)
-        # TODO- check params
+
         self._score_function = score_function(learning_algorithm, alpha_for_score_function)
+
         self._all_features = [i for i in range(number_of_features)]
+        self._max_cost = None
+        self._given_features = None
 
     def _buy_features(self, given_features: list[int], maximal_cost: float) -> list[int]:
-        population = self._get_population(given_features, maximal_cost)
-
-
-        pass
-
-    def _get_population(self, given_features: list[int], maximal_cost: float):
         """
-        this function wil create a proper population. a member in the population is a subset of features, which total
-        cost is less equal than maximal cost
-        :param given_features: the features that are given us for "free"
-        :param maximal_cost: the maximal cost for the learning process
-        :return: population
+        this function choose from the best subsets of features calculated by the genetic algorithm
+        the one which is valid according to our parameters
+        :param given_features: the features that are given to us for free
+        :param maximal_cost: the limit of all the bought features cost
+        :return: a valid subset of the features
         """
-        tested_features = get_complementary_set(self._all_features, given_features)
-        power_series = chain.from_iterable(combinations(tested_features, item) for item in range(len(tested_features) + 1))
-        population = []
-        for subset in power_series:
-            if self._calc_subset_cost(list(subset)) <= maximal_cost:
-                genom = np.zeros(max(subset)+1)
-                population.append(genom+given_features)
-        return population
+        self._max_cost = maximal_cost
+        self._given_features = given_features
+
+        max_val_subsets = self._get_max_val_subsets()
+        valid = self._get_valid_subset(max_val_subsets)
+        return valid
+
+    def _get_max_val_subsets(self) -> List[List[int]]:
+        """
+        the genetic algorithm. return the HallOfFame - the best feature's subsets it terms of accuracy
+        :return: HOF
+        """
+        X_trainAndTest, X_validation, y_trainAndTest, y_validation = train_test_split(self._train_samples.samples,
+                                                                                      self._train_samples.classes,
+                                                                                      test_size=0.20, random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(X_trainAndTest, y_trainAndTest, test_size=0.20,
+                                                            random_state=42)
+
+        creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+        creator.create("Individual", list, fitness=creator.FitnessMax)
+
+        toolbox = base.Toolbox()
+        toolbox.register("attr_bool", random.randint, 0, 1)
+        toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_bool, len(self._all_features))
+        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+
+        toolbox.register("evaluate", self._get_fitness, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
+        toolbox.register("mate", tools.cxOnePoint)
+        toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
+        toolbox.register("select", tools.selTournament, tournsize=3)
+
+        hof = self._get_HOF(toolbox)
+        testAccuracyList, validationAccuracyList, individualList, percentileList = self._get_metrics(hof,
+                                                                                                     X_trainAndTest,
+                                                                                                     X_validation,
+                                                                                                     y_trainAndTest,
+                                                                                                     y_validation)
+
+        # Get a list of subsets that performed best on validation data
+        maxValAccSubsetIndices = [index for index in range(len(validationAccuracyList)) if
+                                  validationAccuracyList[index] == max(validationAccuracyList)]
+        maxValIndividuals = [individualList[index] for index in maxValAccSubsetIndices]
+        maxValSubsets = [[self._all_features[index] for index in range(len(individual)) if individual[index] == 1] for
+                         individual in maxValIndividuals]
+
+        return maxValSubsets
+
+    def _get_valid_subset(self, subsets: List[List[int]]) -> List[int]:
+        """
+        this function return the first item in the valid subsets list if exist.
+        :param subsets:
+        :return: a valid subset of features.
+        """
+        valid = []
+        for subset in subsets:
+            if self._is_legal_subset(subset):
+                valid.append(subset)
+        if not valid:
+            raise ValueError
+        return valid[0]
 
     def _calc_subset_cost(self, subset: list[int]) -> float:
+        """
+        this function calculate the cost of a given subset
+        :param subset: subset of features.
+        :return: cost.
+        """
         total_cost = 0
         for item in subset:
             total_cost += self._features_costs[item]
         return total_cost
 
+    def _is_legal_subset(self, individual) -> bool:
+        """
+        this function determine rather a subset id legal in terms of cost.
+        :param individual: a "genome" - subset of features.
+        :return: the legality of the given genome.
+        """
+        added_features = General.utils.get_complementary_set(individual, self._given_features)
+        cost = self._calc_subset_cost(list(added_features))
+        if cost > self._max_cost:
+            return False
+        return True
+
+    def _get_fitness(self, individual: List[int], X_train, X_test, y_train, y_test) -> (float,):
+        """
+        the fitness function for the genetic algorithm.
+        :param individual: genome.
+        :return: accuracy
+        """
+
+        # accuracy is between 0 to 1, scoring a subset with -1 when the initial population is legal
+        # promise that this subset won't chosen
+
+        if not self._is_legal_subset(individual):
+            return -1
+
+        x_train_data = pd.DataFrame(X_train)
+        x_test_data = pd.DataFrame(X_test)
+
+        unwanted_cols = [index for index in range(len(individual)) if individual[index] == 0]
+        X_trainParsed = x_train_data.drop(x_train_data.columns[unwanted_cols], axis=1)
+        X_trainOhFeatures = pd.get_dummies(X_trainParsed)
+        X_testParsed = x_test_data.drop(x_test_data.columns[unwanted_cols], axis=1)
+        X_testOhFeatures = pd.get_dummies(X_testParsed)
+
+        sharedFeatures = set(X_trainOhFeatures.columns) & set(X_testOhFeatures.columns)
+        removeFromTrain = set(X_trainOhFeatures.columns) - sharedFeatures
+        removeFromTest = set(X_testOhFeatures.columns) - sharedFeatures
+        X_trainOhFeatures = X_trainOhFeatures.drop(list(removeFromTrain), axis=1)
+        X_testOhFeatures = X_testOhFeatures.drop(list(removeFromTest), axis=1)
+
+        clf = LogisticRegression(max_iter=200)
+        clf.fit(X_trainOhFeatures, y_train)
+        predictions = clf.predict(X_testOhFeatures)
+        accuracy = accuracy_score(y_test, predictions)
+
+        # Return calculated accuracy as fitness
+        return accuracy,
+
+    @staticmethod
+    def _get_HOF(toolbox):
+        """
+        return the hall of fame - the best individuals (Genome : List[int]) in the population (List[List[int]]).
+        :param toolbox:
+        :return: HOF
+        """
+        numPop = 50
+        numGen = 8
+        pop = toolbox.population(numPop * numGen)
+        hof = tools.HallOfFame(numPop * numGen)
+        stats = tools.Statistics(lambda ind: ind.fitness.values)
+        stats.register("avg", np.mean)
+        stats.register("std", np.std)
+        stats.register("min", np.min)
+        stats.register("max", np.max)
+
+        # Launch genetic algorithm
+        pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=numGen, stats=stats, halloffame=hof,
+                                       verbose=True)
+
+        # Return the hall of fame
+        return hof
+
+    def _get_metrics(self, hof, X_trainAndTest, X_validation, y_trainAndTest, y_validation):
+        # Get list of percentiles in the hall of fame
+        percentileList = [i / (len(hof) - 1) for i in range(len(hof))]
+
+        # Gather fitness data from each percentile
+        testAccuracyList = []
+        validationAccuracyList = []
+        individualList = []
+        for individual in hof:
+            testAccuracy = individual.fitness.values
+            validationAccuracy = self._get_fitness(individual, X_trainAndTest, X_validation, y_trainAndTest,
+                                                   y_validation)
+            testAccuracyList.append(testAccuracy[0])
+            validationAccuracyList.append(validationAccuracy[0])
+            individualList.append(individual)
+        testAccuracyList.reverse()
+        validationAccuracyList.reverse()
+        return testAccuracyList, validationAccuracyList, individualList, percentileList
