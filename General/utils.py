@@ -9,7 +9,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sklearn
 import sklearn.preprocessing as pre
-import scipy.stats as stats
 
 from typing import Callable, Tuple, Union, Optional
 from dataclasses import dataclass
