@@ -29,7 +29,7 @@ class GeneticAlgorithm(SequenceAlgorithm):
 
         super().__init__(learning_algorithm)
 
-        self._score_function = score_function(learning_algorithm, alpha_for_score_function)
+        # self._score_function = score_function(learning_algorithm, alpha_for_score_function)
 
         self._all_features = [i for i in range(number_of_features)]
         self._max_cost = None

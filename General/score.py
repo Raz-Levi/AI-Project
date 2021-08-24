@@ -35,12 +35,7 @@ class ScoreFunction(abc.ABC):
         learning_algorithm default value is None
         alpha default value is 1
         """
-        train_samples = args[0]
-        given_features = args[1]
-        new_feature = args[2]
-        costs_list = args[3]
-
-        return self._execute_function(train_samples, given_features, new_feature, costs_list)
+        return self._execute_function(*args, **kwargs)
 
 
 class ScoreFunctionA(ScoreFunction):
