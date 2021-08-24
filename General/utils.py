@@ -6,9 +6,11 @@ Utils For The Project
 
 import pandas as pd
 import numpy as np
+import networkx as nx
 import matplotlib.pyplot as plt
 import sklearn
 import sklearn.preprocessing as pre
+import abc
 
 from typing import Callable, Tuple, Union, Optional
 from dataclasses import dataclass
@@ -19,16 +21,29 @@ Sample = np.array
 Classes = np.array
 
 
-@dataclass
-class TrainSamples:
-    samples: np.array  # Training data- shape (n_samples, n_features), i.e samples are in the rows.
-    classes: Classes  # Target values- shape (n_samples,).
+class Samples(object):
+    """
+    Generic class for batch of samples.
+    """
+    def __init__(self, train_samples: np.array, train_classes: Classes):
+        self.samples = train_samples  # Data- shape (n_samples, n_features), i.e samples are in the rows.
+        self.classes = train_classes  # Target values- shape (n_samples,).
+
+    def get_features_num(self):
+        """
+        :return: total features number of the samples in the batch.
+        """
+        return self.samples.shape[1]
+
+    def get_samples_num(self):
+        """
+        :return: number of the all samples in the batch.
+        """
+        return self.samples.shape[0]
 
 
-@dataclass
-class TestSamples:
-    samples: np.array  # Test data- shape (n_samples, n_features), i.e samples are in the rows.
-    classes: Classes  # Target values- shape (n_samples,) for computing the accuracy.
+TrainSamples = Samples
+TestSamples = Samples
 
 
 """"""""""""""""""""""""""""""""""""""""""" Methods """""""""""""""""""""""""""""""""""""""""""
@@ -143,30 +158,3 @@ def normalize_data(data):
     :return: normalized data.
     """
     return pre.normalize(data, axis=0)
-
-
-# deprecated
-def complete_features(samples: Sample, given_features: list[int], total_features_num: int,
-                      default_value: Optional[float] = np.inf) -> Sample:
-    """
-    expands each of the given samples to size total_features_num by placing default_value in all the places which are
-    not in given_features.
-    samples has to be arranged according to given_features- the function sets the first value in sample to the first
-    index in given_features in the new expanded sample.
-    given_features isn't required to be sorted.
-    total_features_num has to be equal or above than the size of sample and given_features.
-    :param samples: given samples for expanding.
-    :param given_features: list of the indices of the chosen features.
-    :param total_features_num: the number to be expanded to.
-    :param default_value: the default value to place in all the places which are not in given_features. default value is inf.
-    :return expanded sample of shape (n_samples, total_features_num).
-    """
-    expanded_samples = []
-    for sample in samples:
-        expanded_sample = [default_value for _ in range(total_features_num)]
-        for feature_idx, feature_value in zip(given_features, sample):
-            expanded_sample[feature_idx] = feature_value
-        expanded_samples.append(expanded_sample)
-    return np.array(expanded_samples)
-
-

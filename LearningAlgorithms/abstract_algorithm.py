@@ -3,7 +3,6 @@ This module defines an abstract algorithm class.
 """
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
-import abc
 from General.utils import *
 
 """"""""""""""""""""""""""""""""""""""""""" Class """""""""""""""""""""""""""""""""""""""""""

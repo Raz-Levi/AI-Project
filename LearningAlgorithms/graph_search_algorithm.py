@@ -4,7 +4,6 @@ This module contains graph search algorithms.
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 from General.utils import *
-import networkx as nx
 from more_itertools import powerset
 import inspect
 

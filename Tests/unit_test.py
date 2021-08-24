@@ -1,23 +1,19 @@
 """
 Automation Tests For The Project
 """
-import networkx as nx
-
-from LearningAlgorithms.graph_search_algorithm import GraphSearchAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 import unittest
 from General.utils import *
+from sklearn.neighbors import KNeighborsClassifier
 from networkx.algorithms.shortest_paths.astar import astar_path
 from networkx.algorithms.shortest_paths.generic import shortest_path
-from sklearn.neighbors import KNeighborsClassifier
 
+from General.score import ScoreFunction, ScoreFunctionA, ScoreFunctionB
 from LearningAlgorithms.abstract_algorithm import LearningAlgorithm
 from LearningAlgorithms.naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
 from LearningAlgorithms.mid_algorithm import MaxVarianceAlgorithm
-from LearningAlgorithms.genetic_algorithm import GeneticAlgorithm
-
-from General.score import ScoreFunctionA, ScoreFunctionB, ScoreFunction
+from LearningAlgorithms.graph_search_algorithm import GraphSearchAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""" Tests  """""""""""""""""""""""""""""""""""""""""
 
@@ -26,7 +22,7 @@ class TestUtils(unittest.TestCase):
     # tests functions
     def test_get_samples_from_csv(self):
         consts = self._get_consts()
-        self._test_get_samples_from_csv(path=consts["csv_path"], expected_matrix=consts["full_expected_matrix"])
+        self._test_get_samples_from_csv(path=consts["numeric_samples_path"], expected_matrix=consts["full_expected_matrix"])
 
     def test_categorical_to_numeric(self):
         consts, categories = self._get_consts(), {}
@@ -43,11 +39,8 @@ class TestUtils(unittest.TestCase):
     def test_get_dataset(self):
         consts = self._get_consts()
         for ratio in consts["train_ratio"]:
-            self._test_get_dataset(path=consts["csv_path"], expected_matrix=consts["full_expected_matrix"],
-                                   train_ratio=ratio, random_seed=consts["random_seed"])
-            self._test_get_dataset(path=consts["csv_with_strings_path"],
-                                   expected_matrix=consts["csv_strings_expected_matrix"], train_ratio=ratio,
-                                   random_seed=consts["random_seed"])
+            self._test_get_dataset(path=consts["numeric_samples_path"], expected_matrix=consts["full_expected_matrix"], train_ratio=ratio, random_seed=consts["random_seed"])
+            self._test_get_dataset(path=consts["csv_with_strings_path"], expected_matrix=consts["csv_strings_expected_matrix"], train_ratio=ratio, random_seed=consts["random_seed"])
 
     def test_declarations(self):
         consts = self._get_consts()
@@ -56,27 +49,6 @@ class TestUtils(unittest.TestCase):
         train_samples = TrainSamples(sample, classes)
         self.assertTrue(np.array_equal(train_samples.samples, sample))
         self.assertTrue(np.array_equal(train_samples.classes, classes))
-
-    def test_complete_features(self):
-        consts = self._get_consts()
-        self.assertTrue(np.array_equal(complete_features(samples=consts["sample"],
-                                                         given_features=consts["given_features"],
-                                                         total_features_num=consts["total_features_num"]),
-                                       consts["completed_features_inf"]))
-        self.assertTrue(np.array_equal(complete_features(samples=consts["sample"],
-                                                         given_features=consts["given_features"],
-                                                         total_features_num=consts["total_features_num"],
-                                                         default_value=consts["default_value"]),
-                                       consts["completed_features_zero"]))
-        self.assertTrue(np.array_equal(complete_features(samples=consts["sample"],
-                                                         given_features=consts["given_features_not_sorted"],
-                                                         total_features_num=consts["total_features_num"],
-                                                         default_value=consts["default_value"]),
-                                       consts["completed_features_not_sorted"]))
-        self.assertTrue(np.array_equal(complete_features(samples=consts["full_sample"],
-                                                         given_features=consts["given_features_full"],
-                                                         total_features_num=consts["total_features_num"]),
-                                       consts["completed_features_full"]))
 
     # private functions
     def _test_get_samples_from_csv(self, path: str, expected_matrix: np.array, preprocess: Callable = None, **kw):
@@ -90,29 +62,20 @@ class TestUtils(unittest.TestCase):
 
     def _test_get_dataset(self, path: str, expected_matrix: np.array, train_ratio, random_seed: int):
         for col in range(expected_matrix.shape[1]):
-            train_samples, test_samples = get_dataset(path=path, class_index=col, train_ratio=train_ratio,
-                                                      random_seed=random_seed, shuffle=False)
+            train_samples, test_samples = get_dataset(path=path, class_index=col, train_ratio=train_ratio, random_seed=random_seed, shuffle=False)
             tested_rows = list(range(expected_matrix.shape[0]))[-train_ratio:]
-            complementary_list = list(get_complementary_set(range(train_samples.samples.shape[0]), tested_rows))
-            self.assertTrue(self._compare_samples(train_samples.samples, train_samples.classes,
-                                                  expected_matrix[complementary_list, :], col))
-            self.assertTrue(
-                self._compare_samples(test_samples.samples, test_samples.classes, expected_matrix[tested_rows, :], col))
+            complementary_list = list(get_complementary_set(range(train_samples.get_samples_num()), tested_rows))
+            self.assertTrue(self._compare_samples(train_samples.samples, train_samples.classes, expected_matrix[complementary_list, :], col))
+            self.assertTrue(self._compare_samples(test_samples.samples, test_samples.classes, expected_matrix[tested_rows, :], col))
 
     @staticmethod
     def _get_consts() -> dict:
         return {
-            "csv_path": "test_csv_functions.csv",
+            "numeric_samples_path": "test_csv_functions.csv",
             "csv_with_strings_path": "test_csv_with_strings.csv",
             "csv_few_samples": "test_csv_few_samples.csv",
             "sample": np.array([[2, 2, 2]]),
             "classes": np.array([1]),
-            "full_sample": np.array([[0, 1, 2, 3, 4, 5, 6]]),
-            "given_features": np.array([2, 4, 6]),
-            "given_features_not_sorted": np.array([6, 0, 2]),
-            "given_features_full": np.array([5, 1, 2, 0, 6, 4, 3]),
-            "total_features_num": 7,
-            "default_value": 0,
             "random_seed": 0,
             "train_ratio": [1, 2, 3, 4],
             "completed_features_inf": np.array([[np.inf, np.inf, 2, np.inf, 2, np.inf, 2]]),
@@ -133,8 +96,7 @@ class TestUtils(unittest.TestCase):
         }
 
     @staticmethod
-    def _compare_samples(samples: np.array, classes: np.array, expected_matrix: np.array, class_index: int,
-                         **kw) -> bool:
+    def _compare_samples(samples: np.array, classes: np.array, expected_matrix: np.array, class_index: int, **kw) -> bool:
         complementary_list = list(get_complementary_set(range(expected_matrix.shape[1]), [class_index]))
         expected_samples, expected_classes = expected_matrix[:, complementary_list], expected_matrix[:, [class_index]]
         return type(samples) == np.ndarray and np.array_equal(samples, expected_samples) and type(
@@ -154,7 +116,7 @@ class TestLearningAlgorithm(unittest.TestCase):
         simple_algorithm = self._get_instance()
         self.assertTrue(simple_algorithm._get_total_features_num() is None)
         simple_algorithm.fit(consts["train_samples"], consts["features_costs"])
-        self.assertTrue(simple_algorithm._get_total_features_num() == consts["total_features_num"])
+        self.assertEqual(simple_algorithm._get_total_features_num(), consts["total_features_num"])
 
     # private functions
     @staticmethod
@@ -176,7 +138,7 @@ class TestLearningAlgorithm(unittest.TestCase):
                 self._total_features_num = None
 
             def fit(self, train_samples: TrainSamples, features_costs: list[float]):
-                self._total_features_num = train_samples.samples.shape[1]
+                self._total_features_num = train_samples.get_features_num()
 
             def predict(self, sample: TestSamples, given_feature: list[int], maximal_cost: float) -> int:
                 return True
@@ -227,8 +189,7 @@ class TestNaiveAlgorithm(unittest.TestCase):
     def _test_initialization(tested_algorithm) -> bool:
         consts = TestNaiveAlgorithm._get_consts()
         algorithm = tested_algorithm(learning_algorithm=consts["learning_algorithm"])
-        return type(algorithm) == tested_algorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit,
-                                                                                                          '__call__')
+        return type(algorithm) == tested_algorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit, '__call__')
 
     @staticmethod
     def _test_naive_algorithm(tested_algorithm) -> Tuple[bool, LearningAlgorithm]:
@@ -424,35 +385,6 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
 
         consts = self._get_consts()
         return GraphSearchAlgorithm(consts["learning_algorithm"], search_algorithm, SimpleScore if score_function is None else score_function)
-
-
-class TestGeneticAlgorithm(unittest.TestCase):
-    # tests functions
-    def test_initialization(self):
-        algorithm = GeneticAlgorithm(10, KNeighborsClassifier(n_neighbors=1), ScoreFunctionA())
-        return type(algorithm) == GeneticAlgorithm
-
-    def test_buy_features(self):
-        algorithm = GeneticAlgorithm(6, KNeighborsClassifier(n_neighbors=1), ScoreFunctionA())
-        consts = self._get_consts()
-        train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"],
-                                       class_index=12)
-        algorithm.fit(train_samples, consts["features_costs"])
-        res = algorithm._buy_features(consts["given_features"][0], consts["maximal_cost"])
-        self.assertTrue(algorithm._is_legal_subset(res))
-
-    # private functions
-    @staticmethod
-    def _get_consts() -> dict:
-        return {
-            "learning_algorithm": KNeighborsClassifier(n_neighbors=1),
-            "numeric_samples_path": "heart_failure_clinical_records_dataset.csv",
-            "train_ratio": 1,
-            "features_costs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 22, 23],
-            "given_features": [[0], [3], [2, 3]],
-            "maximal_cost": 10,
-            "total_features": 12,
-        }
 
 
 if __name__ == '__main__':

@@ -6,3 +6,4 @@
 .idea/AI-Project.iml
 .pytest_cache
 .DS_Store
+*.pyc
