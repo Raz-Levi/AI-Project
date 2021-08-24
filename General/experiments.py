@@ -28,7 +28,7 @@ EXPERIMENTS_PARAMS = dict(  # TODO: update the parameters after we are deciding 
     features_costs=[],
     given_features=[],
     maximal_cost=0,
-    default_learning_algorithm=GraphSearchAlgorithm(),  # TODO: decide default and initialize it here
+    default_learning_algorithm=GraphSearchAlgorithm,  # TODO: decide default
     default_classifier=KNeighborsClassifier,
     default_score_function=ScoreFunctionB(learning_algorithm=KNeighborsClassifier),
 
@@ -108,17 +108,19 @@ def execute_generic_experiment(train_samples: TrainSamples, test_samples: TestSa
 
 def hyperparameter_for_score_function_experiment(train_samples: TrainSamples):
     folds = KFold(n_splits=EXPERIMENTS_PARAMS["n_split"], shuffle=True, random_state=["random_state"])
-    m_values, m_accuracy = EXPERIMENTS_PARAMS["cv_values"], []
-    learning_algorithm = EXPERIMENTS_PARAMS["default_learning_algorithm"]
+    alpha_values, accuracies = EXPERIMENTS_PARAMS["cv_values"], []
 
-    for m_value in m_values:
+    for alpha in alpha_values:
         accuracy = 0
         for train_fold, test_fold in folds.split(train_samples):
-            accuracy += learning_algorithm(np.take(train_samples, train_fold, 0), m_value).classify(np.take(train_samples, test_fold, 0))
-        m_accuracy.append(accuracy / EXPERIMENTS_PARAMS["n_split"])
+            score_function = ScoreFunctionA(learning_algorithm=EXPERIMENTS_PARAMS["default_classifier"], alpha=alpha)
+            learning_algorithm = EXPERIMENTS_PARAMS["default_learning_algorithm"](learning_algorithm=EXPERIMENTS_PARAMS["default_classifier"], score_function=score_function)  # TODO: add params
+            learning_algorithm.fit(np.take(train_samples, train_fold, 0), EXPERIMENTS_PARAMS["features_costs"])
+            accuracy += learning_algorithm.predict(np.take(train_samples, test_fold, 0), EXPERIMENTS_PARAMS["given_features"], EXPERIMENTS_PARAMS["maximal_cost"])
+        accuracies.append(accuracy / EXPERIMENTS_PARAMS["n_split"])
 
-    print_graph(m_values, m_accuracy, GRAPHS_PARAMS["x_label_cv"], GRAPHS_PARAMS["y_label_cv"])
-    # return m_values[int(np.argmax(m_accuracy))] # TODO: remove it after get the best param
+    print_graph(alpha_values, accuracies, GRAPHS_PARAMS["x_label_cv"], GRAPHS_PARAMS["y_label_cv"])
+    # return alpha_values[int(np.argmax(accuracies))] # TODO: remove it after get the best param
 
 
 def score_function_experiment(train_samples: TrainSamples, test_samples: TestSamples):
