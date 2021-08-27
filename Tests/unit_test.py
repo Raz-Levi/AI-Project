@@ -384,7 +384,9 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
                 return 0.2
 
         consts = self._get_consts()
-        return GraphSearchAlgorithm(consts["learning_algorithm"], search_algorithm, SimpleScore if score_function is None else score_function)
+        score_function_type = SimpleScore if score_function is None else score_function
+        score_function = score_function_type(consts["learning_algorithm"])
+        return GraphSearchAlgorithm(consts["learning_algorithm"], search_algorithm, score_function)
 
 
 if __name__ == '__main__':
