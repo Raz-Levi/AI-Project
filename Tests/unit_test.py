@@ -14,6 +14,7 @@ from LearningAlgorithms.abstract_algorithm import LearningAlgorithm
 from LearningAlgorithms.naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
 from LearningAlgorithms.mid_algorithm import MaxVarianceAlgorithm
 from LearningAlgorithms.graph_search_algorithm import GraphSearchAlgorithm
+from LearningAlgorithms.genetic_algorithm import GeneticAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""" Tests  """""""""""""""""""""""""""""""""""""""""
 
@@ -387,6 +388,34 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
         score_function_type = SimpleScore if score_function is None else score_function
         score_function = score_function_type(consts["learning_algorithm"])
         return GraphSearchAlgorithm(consts["learning_algorithm"], search_algorithm, score_function)
+
+
+class TestGeneticAlgorithm(unittest.TestCase):
+    # tests functions
+    def test_initialization(self):
+        algorithm = GeneticAlgorithm(10, KNeighborsClassifier(n_neighbors=1), ScoreFunctionA())
+        return type(algorithm) == GeneticAlgorithm
+
+    def test_buy_features(self):
+        algorithm = GeneticAlgorithm(6, KNeighborsClassifier(n_neighbors=1), ScoreFunctionA())
+        consts = self._get_consts()
+        train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"], class_index=12)
+        algorithm.fit(train_samples, consts["features_costs"])
+        res = algorithm._buy_features(consts["given_features"][0], consts["maximal_cost"])
+        self.assertTrue(algorithm._is_legal_subset(res))
+
+    # private functions
+    @staticmethod
+    def _get_consts() -> dict:
+        return {
+            "learning_algorithm": KNeighborsClassifier(n_neighbors=1),
+            "numeric_samples_path": "heart_failure_clinical_records_dataset.csv",
+            "train_ratio": 1,
+            "features_costs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 22, 23],
+            "given_features": [[0], [3], [2, 3]],
+            "maximal_cost": 10,
+            "total_features": 12,
+            }
 
 
 if __name__ == '__main__':
