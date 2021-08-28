@@ -3,19 +3,14 @@ This module contains a search algorithm based on a genetic algorithm
 """
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
-import random
-from typing import List
+from General.utils import *
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
-import numpy as np
-import pandas as pd
-import sklearn
 from deap import creator, base, tools, algorithms
-from General.score import ScoreFunction
-import General.utils
-from LearningAlgorithms.abstract_algorithm import SequenceAlgorithm
 from sklearn.model_selection import train_test_split
 
+from General.score import ScoreFunction
+from LearningAlgorithms.abstract_algorithm import SequenceAlgorithm
 """"""""""""""""""""""""""""""""""""""""""" Classes """""""""""""""""""""""""""""""""""""""""""
 
 
@@ -121,7 +116,7 @@ class GeneticAlgorithm(SequenceAlgorithm):
         :param individual: a "genome" - subset of features.
         :return: the legality of the given genome.
         """
-        added_features = General.utils.get_complementary_set(individual, self._given_features)
+        added_features = get_complementary_set(individual, self._given_features)
         cost = self._calc_subset_cost(list(added_features))
         if cost > self._max_cost:
             return False

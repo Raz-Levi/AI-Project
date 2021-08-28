@@ -1,9 +1,11 @@
 """
 This module contains graph search algorithms.
 """
+import numpy as np
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 from General.utils import *
+from simpleai.search import SearchProblem
 from more_itertools import powerset
 import inspect
 
@@ -12,8 +14,52 @@ from General.score import ScoreFunction
 
 """"""""""""""""""""""""""""""""""" Definitions and Consts """""""""""""""""""""""""""""""""""
 
-node = frozenset[int]
-edge = Tuple[node, node]
+Node = frozenset[int]
+Edge = Tuple[Node, Node]
+State = Union[int]
+
+
+class FeaturesProblem(SearchProblem):
+    def __init__(self, initial_state: State, train_samples: TrainSamples, score_function: ScoreFunction, total_features: int,
+                 maximal_cost: float, features_costs: list[float]):
+        super().__init__(initial_state)
+        self._train_samples = train_samples
+        self._score_function = score_function
+        self._total_features = total_features
+        self._given_features = initial_state
+        self._maximal_cost = maximal_cost
+        self._features_costs = features_costs
+        self._initial_state = initial_state
+        self._scores = {}
+
+    def actions(self, state: State) -> List:
+        return [list(np.append(state, feature)) for feature in get_complementary_set(range(self._total_features), state)]
+
+    def result(self, last_state: State, new_state: State) -> State:
+        return new_state
+
+    def value(self, state: State) -> float:
+        return self._calculate_score(state) if self._is_valid_state(state) else -np.inf
+
+    def generate_random_state(self) -> State:
+        states = [list(np.append(sub_set, self._given_features).astype(np.int)) for sub_set in powerset(get_complementary_set(range(self._total_features), self._given_features))]
+        return random.choice(states)
+
+    def _is_valid_state(self, state: State) -> bool:
+        return sum(self._features_costs[feature] for feature in state) <= self._maximal_cost
+
+    def _calculate_score(self, state: State) -> float:
+        total_score, states = 0, self._initial_state
+        for new_feature in get_complementary_set(state, self._initial_state):
+            if f'{states}+{new_feature}' not in self._scores:
+                self._scores[f'{states}+{new_feature}'] = self._score_function(train_samples=self._train_samples,
+                                                                               given_features=states,
+                                                                               new_feature=new_feature,
+                                                                               costs_list=self._features_costs)
+            total_score += self._scores[f'{states}+{new_feature}']
+            states.append(new_feature)
+        return total_score
+
 
 """"""""""""""""""""""""""""""""""""""""""" Classes """""""""""""""""""""""""""""""""""""""""""
 
@@ -63,7 +109,7 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
         self._graph.add_nodes_from(nodes)
         self._graph.add_weighted_edges_from(self._get_edges(nodes))
 
-    def _get_edges(self, nodes: list[node]) -> list[tuple[node, node, float]]:
+    def _get_edges(self, nodes: list[Node]) -> list[tuple[Node, Node, float]]:
         """
         Gets the edges of the graph and their weights.
         :param nodes: list of the nodes in the graph.
@@ -81,7 +127,7 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
                     edges.append((nodes[source], nodes[target], weight))
         return edges
 
-    def _get_shortest_path(self, given_features: list[int]) -> list[node]:
+    def _get_shortest_path(self, given_features: list[int]) -> list[Node]:
         """
         Executes the searching algorithm.
         :param given_features: list of the indices of the chosen features.
@@ -99,7 +145,7 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
                                       heuristic=self._features_costs_heuristic,
                                       weight="weight")
 
-    def _fulfill_features(self, given_features: list[int], path: list[node], maximal_cost: float) -> list[int]:
+    def _fulfill_features(self, given_features: list[int], path: list[Node], maximal_cost: float) -> list[int]:
         """
         Returns the features in the shortest path that their costs are not above the maximal costs.
         :param path: list of nodes in a shortest path.
@@ -114,7 +160,7 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
                 break
         return given_features
 
-    def _features_costs_heuristic(self, node1: node, node2: node) -> float:
+    def _features_costs_heuristic(self, node1: Node, node2: Node) -> float:
         """
         Gets the costs of all the features that are not in node1 and node2. this function is used as heuristic for the
         searches algorithm.
@@ -123,3 +169,45 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
         :return: costs of all the features that are not in node1 and node2.
         """
         return sum(self._features_costs[feature] for feature in get_complementary_set(node2, node1))
+
+
+class LocalSearchAlgorithm(SequenceAlgorithm):
+    """
+    An algorithm that performs local search algorithm on score function.
+    """
+
+    # Public Methods
+    def __init__(self, learning_algorithm: sklearn.base.ClassifierMixin, local_search_algorithm: Callable, score_function: ScoreFunction):
+        """
+        Init function for LocalSearchAlgorithm algorithm.
+        :param learning_algorithm: sklearn's classifier. the function saves it and uses it later.
+        :param local_search_algorithm: simpleai's local search algorithm.
+        :param score_function: ScoreFunction object for calculating the score of the states.
+        """
+        super().__init__(learning_algorithm)
+        self._local_search_algorithm = local_search_algorithm
+        self._score_function = score_function
+
+    # Private Methods
+    def _buy_features(self, given_features: list[int], maximal_cost: float) -> list[int]:
+        """
+        A method for choosing the supplementary features. the method performs local search algorithm.
+        the returned given features are the features in the maximal state that their costs are not above the maximal costs.
+        :param given_features: list of the indices of the chosen features.
+        :param maximal_cost: the maximum available cost for buying features.
+        :return: the updated given features including all the chosen features.
+        """
+        best_state = self._get_best_state(given_features, maximal_cost)
+        return self._fulfill_features(given_features, best_state)
+
+    def _get_best_state(self, given_features: list[int], maximal_cost: float):
+        initial_state = FeaturesProblem(initial_state=given_features,
+                                        train_samples=self._train_samples,
+                                        score_function=self._score_function,
+                                        total_features=self._train_samples.get_features_num(),
+                                        maximal_cost=maximal_cost,
+                                        features_costs=self._features_costs)
+        return self._local_search_algorithm(problem=initial_state).state
+
+    def _fulfill_features(self, given_features: list[int], best_state) -> list[int]:
+        return given_features.extend(list(best_state))

@@ -3,8 +3,6 @@ This module contains naive algorithms
 """
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
-import random
-
 from General.utils import *
 from LearningAlgorithms.abstract_algorithm import LearningAlgorithm, SequenceAlgorithm
 
