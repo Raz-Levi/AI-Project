@@ -1,7 +1,6 @@
 """
 This module contains graph search algorithms.
 """
-import numpy as np
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 from General.utils import *
@@ -16,10 +15,10 @@ from General.score import ScoreFunction
 
 Node = frozenset[int]
 Edge = Tuple[Node, Node]
-State = Union[int]
+State = List[int]
 
 
-class FeaturesProblem(SearchProblem):
+class FeaturesProblem(SearchProblem):  # TODO: add doc
     def __init__(self, initial_state: State, train_samples: TrainSamples, score_function: ScoreFunction, total_features: int,
                  maximal_cost: float, features_costs: list[float]):
         super().__init__(initial_state)
@@ -29,7 +28,7 @@ class FeaturesProblem(SearchProblem):
         self._given_features = initial_state
         self._maximal_cost = maximal_cost
         self._features_costs = features_costs
-        self._initial_state = initial_state
+        self._initial_state = initial_state.copy()
         self._scores = {}
 
     def actions(self, state: State) -> List:
@@ -49,7 +48,7 @@ class FeaturesProblem(SearchProblem):
         return sum(self._features_costs[feature] for feature in state) <= self._maximal_cost
 
     def _calculate_score(self, state: State) -> float:
-        total_score, states = 0, self._initial_state
+        total_score, states = 0, self._initial_state.copy()
         for new_feature in get_complementary_set(state, self._initial_state):
             if f'{states}+{new_feature}' not in self._scores:
                 self._scores[f'{states}+{new_feature}'] = self._score_function(train_samples=self._train_samples,
@@ -209,5 +208,5 @@ class LocalSearchAlgorithm(SequenceAlgorithm):
                                         features_costs=self._features_costs)
         return self._local_search_algorithm(problem=initial_state).state
 
-    def _fulfill_features(self, given_features: list[int], best_state) -> list[int]:
+    def _fulfill_features(self, given_features: list[int], best_state) -> list[int]:  # TODO: check it (maybe we dont need it since we pass given features as ref
         return given_features.extend(list(best_state))
