@@ -1,4 +1,4 @@
-#AI Project by Sivan Yosebashvili and Raz Levi
+##**AI Project by Sivan Yosebashvili and Raz Levi**
 
 General/utils.py: Utils For The Project
 
@@ -17,3 +17,5 @@ LearningAlgorithm/graph_search_algorithm.py: Module for search algorithms
 LearningAlgorithm/genetic_algorithm.py: Module for a search algorithm based on a genetic algorithm
 
 Tests/unit_test.py: Automation Tests For The Project
+
+Tests/tests_parameters.py: Parameters for the unit test
