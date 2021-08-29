@@ -9,10 +9,10 @@ from sklearn.neighbors import KNeighborsClassifier
 """"""""""""""""""""""""""""""""""""""""""" Parameters """""""""""""""""""""""""""""""""""""""""""
 
 # Path for csv files that contains dataset for example
-NUMERIC_SAMPLES_PATH = "test_csv_functions.csv"
-STRING_SAMPLES_PATH = "test_csv_with_strings.csv"
-FEW_REAL_SAMPLES_PATH = "test_csv_few_samples.csv"
-HEART_FAILURE_SAMPLES_PATH = "heart_failure_clinical_records_dataset.csv"
+NUMERIC_SAMPLES_PATH = "TestDataSets/test_csv_functions.csv"
+STRING_SAMPLES_PATH = "TestDataSets/test_csv_with_strings.csv"
+FEW_REAL_SAMPLES_PATH = "TestDataSets/test_csv_few_samples.csv"
+HEART_FAILURE_SAMPLES_PATH = "TestDataSets/heart_failure_clinical_records_dataset.csv"
 
 # Samples for example
 TRAIN_SAMPLE = np.array([[2, 2, 2]])
