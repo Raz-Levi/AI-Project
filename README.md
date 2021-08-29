@@ -1,4 +1,4 @@
-##**AI Project by Sivan Yosebashvili and Raz Levi**
+## **AI Project by Sivan Yosebashvili and Raz Levi**
 
 General/utils.py: Utils For The Project
 
