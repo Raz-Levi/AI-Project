@@ -197,7 +197,7 @@ class LocalSearchAlgorithm(SequenceAlgorithm):
         :return: the updated given features including all the chosen features.
         """
         best_state = self._get_best_state(given_features, maximal_cost)
-        return self._fulfill_features(given_features, best_state)
+        return sorted(best_state)
 
     def _get_best_state(self, given_features: GivenFeatures, maximal_cost: float) -> State:
         initial_state = FeaturesProblem(initial_state=given_features,
@@ -207,7 +207,3 @@ class LocalSearchAlgorithm(SequenceAlgorithm):
                                         maximal_cost=maximal_cost,
                                         features_costs=self._features_costs)
         return self._local_search_algorithm(problem=initial_state).state
-
-    def _fulfill_features(self, given_features: GivenFeatures, best_state: State) -> GivenFeatures:
-        given_features.extend(list(best_state))
-        return list(set(given_features))
