@@ -15,7 +15,7 @@ from General.score import ScoreFunction
 
 Node = frozenset[int]
 Edge = Tuple[Node, Node]
-State = List[int]
+State = GivenFeatures
 
 
 class FeaturesProblem(SearchProblem):  # TODO: add doc
@@ -68,23 +68,23 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
     An algorithm that builds features graph and performs search algorithm on this graph.
     """
     # Public Methods
-    def __init__(self, learning_algorithm: sklearn.base.ClassifierMixin, search_algorithm: nx.algorithms,
+    def __init__(self, classifier: sklearn.base.ClassifierMixin, search_algorithm: nx.algorithms,
                  score_function: ScoreFunction, algorithm_method: Optional[str] = "dijkstra"):
         """
         Init function for GraphSearchAlgorithm algorithm.
-        :param learning_algorithm: sklearn's classifier. the function saves it and uses it later.
+        :param classifier: sklearn's classifier. the function saves it and uses it later.
         :param search_algorithm: nx.algorithm for performing search on graph.
         :param score_function: ScoreFunction object for calculating the weights on the edges.
         :param algorithm_method: (Optional) the algorithm to use to compute the path. supported options: ‘dijkstra’, ‘bellman-ford’.
         """
-        super().__init__(learning_algorithm)
+        super().__init__(classifier)
         self._search_algorithm = search_algorithm
         self._algorithm_method = algorithm_method
         self._score_function = score_function
         self._graph = None
 
     # Private Methods
-    def _buy_features(self, given_features: list[int], maximal_cost: float) -> list[int]:
+    def _buy_features(self, given_features: GivenFeatures, maximal_cost: float) -> GivenFeatures:
         """
         A method for choosing the supplementary features. the method builds a features graph and performs search algorithm
         on this graph. the returned given features are the features in the shortest path that their costs are not above
@@ -97,7 +97,7 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
         path = self._get_shortest_path(given_features)
         return self._fulfill_features(given_features, path, maximal_cost)
 
-    def _build_graph(self, total_features: int, given_features: list[int]):
+    def _build_graph(self, total_features: int, given_features: GivenFeatures):
         """
         Builds graph for performing search on it as we described in PDF.
         :param total_features: number of the entire features in the train set.
@@ -126,7 +126,7 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
                     edges.append((nodes[source], nodes[target], weight))
         return edges
 
-    def _get_shortest_path(self, given_features: list[int]) -> list[Node]:
+    def _get_shortest_path(self, given_features: GivenFeatures) -> list[Node]:
         """
         Executes the searching algorithm.
         :param given_features: list of the indices of the chosen features.
@@ -144,7 +144,7 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
                                       heuristic=self._features_costs_heuristic,
                                       weight="weight")
 
-    def _fulfill_features(self, given_features: list[int], path: list[Node], maximal_cost: float) -> list[int]:
+    def _fulfill_features(self, given_features: GivenFeatures, path: list[Node], maximal_cost: float) -> GivenFeatures:
         """
         Returns the features in the shortest path that their costs are not above the maximal costs.
         :param path: list of nodes in a shortest path.
@@ -176,19 +176,19 @@ class LocalSearchAlgorithm(SequenceAlgorithm):
     """
 
     # Public Methods
-    def __init__(self, learning_algorithm: sklearn.base.ClassifierMixin, local_search_algorithm: Callable, score_function: ScoreFunction):
+    def __init__(self, classifier: sklearn.base.ClassifierMixin, local_search_algorithm: Callable, score_function: ScoreFunction):
         """
         Init function for LocalSearchAlgorithm algorithm.
-        :param learning_algorithm: sklearn's classifier. the function saves it and uses it later.
+        :param classifier: sklearn's classifier. the function saves it and uses it later.
         :param local_search_algorithm: simpleai's local search algorithm.
         :param score_function: ScoreFunction object for calculating the score of the states.
         """
-        super().__init__(learning_algorithm)
+        super().__init__(classifier)
         self._local_search_algorithm = local_search_algorithm
         self._score_function = score_function
 
     # Private Methods
-    def _buy_features(self, given_features: list[int], maximal_cost: float) -> list[int]:
+    def _buy_features(self, given_features: GivenFeatures, maximal_cost: float) -> GivenFeatures:
         """
         A method for choosing the supplementary features. the method performs local search algorithm.
         the returned given features are the features in the maximal state that their costs are not above the maximal costs.
@@ -199,7 +199,7 @@ class LocalSearchAlgorithm(SequenceAlgorithm):
         best_state = self._get_best_state(given_features, maximal_cost)
         return self._fulfill_features(given_features, best_state)
 
-    def _get_best_state(self, given_features: list[int], maximal_cost: float):
+    def _get_best_state(self, given_features: GivenFeatures, maximal_cost: float) -> State:
         initial_state = FeaturesProblem(initial_state=given_features,
                                         train_samples=self._train_samples,
                                         score_function=self._score_function,
@@ -208,5 +208,6 @@ class LocalSearchAlgorithm(SequenceAlgorithm):
                                         features_costs=self._features_costs)
         return self._local_search_algorithm(problem=initial_state).state
 
-    def _fulfill_features(self, given_features: list[int], best_state) -> list[int]:  # TODO: check it (maybe we dont need it since we pass given features as ref
-        return given_features.extend(list(best_state))
+    def _fulfill_features(self, given_features: GivenFeatures, best_state: State) -> GivenFeatures:
+        given_features.extend(list(best_state))
+        return list(set(given_features))

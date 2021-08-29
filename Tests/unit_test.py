@@ -134,7 +134,7 @@ class TestLearningAlgorithm(unittest.TestCase):
         }
 
     @staticmethod
-    def _get_instance() -> LearningAlgorithm:
+    def _get_instance() -> Type[LearningAlgorithm]:
         class SimpleAlgorithm(LearningAlgorithm):
             def __init__(self):
                 self._total_features_num = None
@@ -142,7 +142,7 @@ class TestLearningAlgorithm(unittest.TestCase):
             def fit(self, train_samples: TrainSamples, features_costs: list[float]):
                 self._total_features_num = train_samples.get_features_num()
 
-            def predict(self, sample: TestSamples, given_feature: list[int], maximal_cost: float) -> int:
+            def predict(self, sample: TestSamples, given_feature: GivenFeatures, maximal_cost: float) -> int:
                 return True
 
             def _get_total_features_num(self) -> int:
@@ -175,7 +175,7 @@ class TestNaiveAlgorithm(unittest.TestCase):
     @staticmethod
     def _get_consts() -> dict:
         return {
-            "learning_algorithm": KNeighborsClassifier(n_neighbors=1),
+            "classifier": KNeighborsClassifier(n_neighbors=1),
             "train_samples": TrainSamples(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [0, 1, 2]]),
                                           np.array([0, 1, 0, 1])),
             "features_costs": [1, 5, 2],
@@ -190,13 +190,13 @@ class TestNaiveAlgorithm(unittest.TestCase):
     @staticmethod
     def _test_initialization(tested_algorithm) -> bool:
         consts = TestNaiveAlgorithm._get_consts()
-        algorithm = tested_algorithm(learning_algorithm=consts["learning_algorithm"])
+        algorithm = tested_algorithm(classifier=consts["classifier"])
         return type(algorithm) == tested_algorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit, '__call__')
 
     @staticmethod
-    def _test_naive_algorithm(tested_algorithm) -> Tuple[bool, LearningAlgorithm]:
+    def _test_naive_algorithm(tested_algorithm) -> Tuple[bool, Type[LearningAlgorithm]]:
         consts = TestNaiveAlgorithm._get_consts()
-        algorithm = tested_algorithm(learning_algorithm=consts["learning_algorithm"])
+        algorithm = tested_algorithm(classifier=consts["classifier"])
         test_result = type(algorithm) == tested_algorithm
         algorithm.fit(train_samples=consts["train_samples"], features_costs=consts["features_costs"])
 
@@ -217,7 +217,7 @@ class TestNaiveAlgorithm(unittest.TestCase):
         return test_result, algorithm
 
     @staticmethod
-    def _test_sequence_algorithm(tested_algorithm) -> Tuple[bool, LearningAlgorithm]:
+    def _test_sequence_algorithm(tested_algorithm) -> Tuple[bool, Type[LearningAlgorithm]]:
         consts = TestNaiveAlgorithm._get_consts()
         test_result, algorithm = TestNaiveAlgorithm._test_naive_algorithm(tested_algorithm)
         predicted_sample = algorithm.predict(samples=consts["train_samples"].samples,
@@ -227,7 +227,7 @@ class TestNaiveAlgorithm(unittest.TestCase):
         return test_result, algorithm
 
     @staticmethod
-    def _test_mid_algorithm(tested_algorithm) -> Tuple[bool, LearningAlgorithm]:
+    def _test_mid_algorithm(tested_algorithm) -> Tuple[bool, Type[LearningAlgorithm]]:
         consts = TestNaiveAlgorithm._get_consts()
         test_result, algorithm = TestNaiveAlgorithm._test_naive_algorithm(tested_algorithm)
         predicted_sample = algorithm.predict(samples=consts["train_samples"].samples,
@@ -261,7 +261,7 @@ class TestScoreFunction(unittest.TestCase):
         classes = consts["classes"]
         costs_list = consts["costs_list"]
         learner = KNeighborsClassifier(1)
-        score_function = ScoreFunctionB(learning_algorithm=learner, alpha=1)
+        score_function = ScoreFunctionB(classifier=learner, alpha=1)
         self.assertEqual(score_function(TrainSamples(samples, classes), [2], 1, costs_list), 0.5)
 
     def test_function_scoreB_2(self):
@@ -270,7 +270,7 @@ class TestScoreFunction(unittest.TestCase):
         classes = consts["classes"]
         costs_list = consts["costs_list"]
         learner = KNeighborsClassifier(1)
-        score_function = ScoreFunctionB(learning_algorithm=learner, alpha=2)
+        score_function = ScoreFunctionB(classifier=learner, alpha=2)
         self.assertEqual(score_function(TrainSamples(samples, classes), [0, 1], 2, costs_list), 0.3333333333333333)
 
     # private functions
@@ -286,12 +286,12 @@ class TestScoreFunction(unittest.TestCase):
 class TestGraphSearchAlgorithm(unittest.TestCase):
     # tests functions
     def test_initialization(self):
-        algorithm = self._get_algorithm_instance()
-        return type(algorithm) == GraphSearchAlgorithm and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit, '__call__')
+        self.assertTrue(self._test_initialization(GraphSearchAlgorithm))
+        self.assertTrue(self._test_initialization(LocalSearchAlgorithm))
 
     def test_build_graph(self):
         consts = self._get_consts()
-        algorithm = self._get_algorithm_instance()
+        algorithm = self._get_algorithm_instance(GraphSearchAlgorithm)
         for given_features in consts["given_features"]:
             features_costs = [i for i in range(len(get_complementary_set(range(consts["total_features"]), given_features)))]
             algorithm.fit(TrainSamples(consts["sample"], consts["class"]), features_costs)
@@ -303,7 +303,7 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
 
     def test_features_costs_heuristic(self):
         consts = self._get_consts()
-        algorithm = self._get_algorithm_instance()
+        algorithm = self._get_algorithm_instance(GraphSearchAlgorithm)
         train_samples = TrainSamples(consts["sample"], consts["class"])
         algorithm.fit(train_samples, list(range(1, train_samples.get_features_num() + 1)))
         for tested_nodes in consts["features_cost_heuristic"]:
@@ -312,8 +312,8 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
     def test_buy_features(self):
         consts = self._get_consts()
         train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"][0])
-        features_costs = list(range(1, train_samples.get_features_num() + 1))
-        algorithm = self._get_algorithm_instance()
+        features_costs = self._get_features_cost(train_samples.get_features_num())
+        algorithm = self._get_algorithm_instance(GraphSearchAlgorithm)
         algorithm.fit(train_samples, features_costs)
         for given_features in consts["given_features"]:
             new_given_features = algorithm._buy_features(given_features[:], consts["maximal_cost_big"])
@@ -322,50 +322,32 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
         self.assertEqual(new_given_features, consts["given_features_maximal_cost_small"])
 
     def test_graph_search_algorithm(self):
-        consts = self._get_consts()
-        for train_ratio in consts["train_ratio"]:
-            train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=train_ratio)
-            features_costs = list(range(1, train_samples.get_features_num() + 1))
-            simple_algorithm = self._get_algorithm_instance()
-            score_function_algorithm = self._get_algorithm_instance(score_function=ScoreFunctionB)
-            dijkstra_algorithm = self._get_algorithm_instance(search_algorithm=shortest_path)
-            simple_algorithm.fit(train_samples, features_costs)
-            score_function_algorithm.fit(train_samples, features_costs)
-            dijkstra_algorithm.fit(train_samples, features_costs)
-            for given_features in consts["given_features"]:
-                predicted_classes = simple_algorithm.predict(train_samples.samples, given_features, consts["maximal_cost_big"])
-                predicted_classes_score_function = score_function_algorithm.predict(train_samples.samples, given_features, consts["maximal_cost_big"])
-                predicted_classes_algorithm_dijkstra = dijkstra_algorithm.predict(train_samples.samples, given_features, consts["maximal_cost_big"])
-                self.assertTrue(np.array_equal(predicted_classes, train_samples.classes))
-                self.assertTrue(np.array_equal(predicted_classes_score_function, train_samples.classes))
-                self.assertTrue(np.array_equal(predicted_classes_algorithm_dijkstra, train_samples.classes))
+        simple_algorithm = self._get_algorithm_instance(GraphSearchAlgorithm)
+        score_function_algorithm = self._get_algorithm_instance(GraphSearchAlgorithm, score_function_type=ScoreFunctionB)
+        dijkstra_algorithm = self._get_algorithm_instance(GraphSearchAlgorithm, search_algorithm=shortest_path)
+        self._full_classification_test(simple_algorithm)
+        self._full_classification_test(score_function_algorithm)
+        self._full_classification_test(dijkstra_algorithm)
 
-    def test_get_best_state(self):  # TODO: verify it
+    def test_get_best_state(self):
         consts = self._get_consts()
         for train_ratio in consts["train_ratio"]:
             train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=train_ratio)
-            algorithm = LocalSearchAlgorithm(consts["learning_algorithm"], hill_climbing, self._get_score_function("B"))
-            features_costs = list(range(1, train_samples.get_features_num() + 1))  # TODO- move it to function
+            algorithm = self._get_algorithm_instance(LocalSearchAlgorithm, self._get_depth_score_function())
+            features_costs = self._get_features_cost(train_samples.get_features_num())
             algorithm.fit(train_samples, features_costs)
             best_state = algorithm._get_best_state(consts["given_features"][0], consts["maximal_cost_big"])
-            self.assertEqual(best_state, consts["best_state"])
+            self.assertEqual(sorted(best_state), consts["best_state"])
 
-    # def test_local_search_algorithm(self):  # TODO: verify it
-    #     consts = self._get_consts()
-    #     for train_ratio in consts["train_ratio"]:
-    #         train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=train_ratio)
-    #         algorithm = LocalSearchAlgorithm(consts["learning_algorithm"], hill_climbing, self._get_score_function("B"))
-    #         features_costs = list(range(1, train_samples.get_features_num() + 1))  # TODO- move it to function
-    #         algorithm.fit(train_samples, features_costs)
-    #         for given_features in consts["given_features"]:
-    #             algorithm.predict(train_samples, given_features, consts["maximal_cost_big"])
+    def test_local_search_algorithm(self):
+        local_search_algorithm = self._get_algorithm_instance(LocalSearchAlgorithm, self._get_depth_score_function())
+        self._full_classification_test(local_search_algorithm)
 
     # private functions
     @staticmethod
     def _get_consts() -> dict:
         return {
-            "learning_algorithm": KNeighborsClassifier(n_neighbors=1),
-            "local_search_algorithm": hill_climbing,
+            "classifier": KNeighborsClassifier(n_neighbors=1),
             "default_score_function": "B",
             "numeric_samples_path": "test_csv_functions.csv",
             "train_ratio": [1, 2, 3, 4],
@@ -403,51 +385,74 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
             "best_state": [0, 1, 2, 3, 4, 5]
         }
 
-    def _get_algorithm_instance(self, score_function: Optional[ScoreFunction] = None, search_algorithm: nx.algorithms = astar_path,
-                                algorithm_type: str = GraphSearchAlgorithm) -> GraphSearchAlgorithm:
-        class SimpleScore(ScoreFunction):
-            def _execute_function(self, train_samples: TrainSamples, given_features: list[int], new_feature: int, costs_list: list[float]) -> float:
-                return 0.2
+    def _test_initialization(self, algorithm_type: Type[LearningAlgorithm]):
+        algorithm = self._get_algorithm_instance(algorithm_type)
+        return type(algorithm) == algorithm_type and hasattr(algorithm.predict, '__call__') and hasattr(algorithm.fit, '__call__')
 
+    def _full_classification_test(self, algorithm: Type[LearningAlgorithm]):
         consts = self._get_consts()
-        score_function_type = SimpleScore if score_function is None else score_function
-        score_function = score_function_type(learning_algorithm=consts["learning_algorithm"])
+        for train_ratio in consts["train_ratio"]:
+            train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=train_ratio)
+            features_costs = self._get_features_cost(train_samples.get_features_num())
+            algorithm.fit(train_samples, features_costs)
+            for given_features in consts["given_features"]:
+                predicted_classes = algorithm.predict(train_samples.samples, given_features, consts["maximal_cost_big"])
+                self.assertTrue(np.array_equal(predicted_classes, train_samples.classes))
+
+    def _get_algorithm_instance(self, algorithm_type: Type[LearningAlgorithm], score_function_type: Optional[Type[ScoreFunction]] = None,
+                                search_algorithm: nx.algorithms = astar_path, local_search_algorithm: Optional[Callable] = hill_climbing) -> Type[LearningAlgorithm]:
+        consts = self._get_consts()
+        score_function_type = self._get_simple_score_function() if score_function_type is None else score_function_type
+        score_function = score_function_type(classifier=consts["classifier"])
         if algorithm_type == GraphSearchAlgorithm:
-            return GraphSearchAlgorithm(consts["learning_algorithm"], search_algorithm, score_function)
-        else:  # TODO: refactor it
-            return LocalSearchAlgorithm(consts["learning_algorithm"], consts["local_search_algorithm"], self._get_score_function(consts["default_score_function"]))
+            return GraphSearchAlgorithm(consts["classifier"], search_algorithm, score_function)
+        else:
+            return LocalSearchAlgorithm(consts["classifier"], local_search_algorithm, score_function)
 
-    def _get_score_function(self, type: str):
-        consts = self._get_consts()
-        return ScoreFunctionA(learning_algorithm=consts["learning_algorithm"]) if type == "A" else ScoreFunctionB(learning_algorithm=consts["learning_algorithm"])
+    def _get_features_cost(self, features_num: int) -> List[int]:
+        return list(range(1, features_num + 1))
 
-
-class TestGeneticAlgorithm(unittest.TestCase):
-    # tests functions
-    def test_initialization(self):
-        algorithm = GeneticAlgorithm(10, KNeighborsClassifier(n_neighbors=1), ScoreFunctionA())
-        return type(algorithm) == GeneticAlgorithm
-
-    def test_buy_features(self):
-        algorithm = GeneticAlgorithm(6, KNeighborsClassifier(n_neighbors=1), ScoreFunctionA())
-        consts = self._get_consts()
-        train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"], class_index=12)
-        algorithm.fit(train_samples, consts["features_costs"])
-        res = algorithm._buy_features(consts["given_features"][0], consts["maximal_cost"])
-        self.assertTrue(algorithm._is_legal_subset(res))
-
-    # private functions
     @staticmethod
-    def _get_consts() -> dict:
-        return {
-            "learning_algorithm": KNeighborsClassifier(n_neighbors=1),
-            "numeric_samples_path": "heart_failure_clinical_records_dataset.csv",
-            "train_ratio": 1,
-            "features_costs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 22, 23],
-            "given_features": [[0], [3], [2, 3]],
-            "maximal_cost": 10,
-            "total_features": 12,
-            }
+    def _get_depth_score_function():
+        class DepthScoreFunction(ScoreFunction):
+            def _execute_function(self, train_samples: TrainSamples, given_features: GivenFeatures, new_feature: int, costs_list: list[float]) -> float:
+                return len(given_features) + 1
+        return DepthScoreFunction
+
+    @staticmethod
+    def _get_simple_score_function():
+        class SimpleScore(ScoreFunction):
+            def _execute_function(self, train_samples: TrainSamples, given_features: GivenFeatures, new_feature: int, costs_list: list[float]) -> float:
+                return 0.2
+        return SimpleScore
+
+
+# class TestGeneticAlgorithm(unittest.TestCase):  # TODO: uncoment
+#     # tests functions
+#     def test_initialization(self):
+#         algorithm = GeneticAlgorithm(10, KNeighborsClassifier(n_neighbors=1), ScoreFunctionA())
+#         return type(algorithm) == GeneticAlgorithm
+#
+#     def test_buy_features(self):
+#         algorithm = GeneticAlgorithm(6, KNeighborsClassifier(n_neighbors=1), ScoreFunctionA())
+#         consts = self._get_consts()
+#         train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=consts["train_ratio"], class_index=12)
+#         algorithm.fit(train_samples, consts["features_costs"])
+#         res = algorithm._buy_features(consts["given_features"][0], consts["maximal_cost"])
+#         self.assertTrue(algorithm._is_legal_subset(res))
+#
+#     # private functions
+#     @staticmethod
+#     def _get_consts() -> dict:
+#         return {
+#             "classifier": KNeighborsClassifier(n_neighbors=1),
+#             "numeric_samples_path": "heart_failure_clinical_records_dataset.csv",
+#             "train_ratio": 1,
+#             "features_costs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 22, 23],
+#             "given_features": [[0], [3], [2, 3]],
+#             "maximal_cost": 10,
+#             "total_features": 12,
+#             }
 
 
 if __name__ == '__main__':

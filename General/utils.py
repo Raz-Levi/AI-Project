@@ -13,13 +13,14 @@ import sklearn.preprocessing as pre
 import abc
 import random
 
-from typing import Callable, Tuple, List, Union, Optional
+from typing import Callable, Tuple, Type, List, Union, Optional
 from dataclasses import dataclass
 
 """"""""""""""""""""""""""""""""""" Definitions and Consts """""""""""""""""""""""""""""""""""
 
 Sample = np.array
 Classes = np.array
+GivenFeatures = List[int]
 
 
 class Samples(object):
