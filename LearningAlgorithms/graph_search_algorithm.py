@@ -246,6 +246,12 @@ class LocalSearchAlgorithm(SequenceAlgorithm):
         return sorted(best_state)
 
     def _get_best_state(self, given_features: GivenFeatures, maximal_cost: float) -> State:
+        """
+        Performs local search algorithm on the score function.
+        :param given_features: list of the indices of the chosen features.
+        :param maximal_cost: the maximum available cost for buying features.
+        :return: the best state that was found by the algorithm.
+        """
         initial_state = FeaturesProblem(initial_state=given_features,
                                         train_samples=self._train_samples,
                                         score_function=self._score_function,
