@@ -75,12 +75,19 @@ class ScoreFunctionB(ScoreFunction):
     def _get_certainty(self, train_samples: TrainSamples, given_features: GivenFeatures,
                        new_feature: int):
         """
-        return the level of the certainty according to the theory we explain in the PDF.
-        :return: the level of the certainty.
+        return the level of certainty according to the theory we explain in the PDF.
+        :return: level of certainty.
         """
         new_features = np.append(given_features, [new_feature])
         data = pd.DataFrame(train_samples.samples)
         self._classifier.fit(data[new_features], train_samples.classes)
         probabilities = self._classifier.predict_proba(data[new_features])
-        certainty = stats.entropy(probabilities[0], probabilities[1])
+        certainty = self._calc_total_certainty(probabilities)
         return 1 - certainty
+
+    @staticmethod
+    def _calc_total_certainty(probabilities):
+        res = 0
+        for row in probabilities:
+            res += stats.entropy(row)
+        return res / len(probabilities)
