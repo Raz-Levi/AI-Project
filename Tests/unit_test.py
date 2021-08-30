@@ -326,7 +326,7 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
             train_samples, _ = get_dataset(consts["numeric_samples_path"], train_ratio=train_ratio)
             features_costs = list(range(1, train_samples.get_features_num() + 1))
             simple_algorithm = self._get_algorithm_instance()
-            score_function_algorithm = self._get_algorithm_instance(score_function=ScoreFunctionB)
+            score_function_algorithm = self._get_algorithm_instance(score_function=ScoreFunctionA)
             dijkstra_algorithm = self._get_algorithm_instance(search_algorithm=shortest_path)
             simple_algorithm.fit(train_samples, features_costs)
             score_function_algorithm.fit(train_samples, features_costs)
