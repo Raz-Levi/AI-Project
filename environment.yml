@@ -21,3 +21,5 @@ dependencies:
       - sklearn
       - networkx
       - more-itertools
+      - deap
+      - simpleai

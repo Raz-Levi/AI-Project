@@ -30,7 +30,7 @@ EXPERIMENTS_PARAMS = dict(  # TODO: update the parameters after we are deciding 
     maximal_cost=0,
     default_learning_algorithm=GraphSearchAlgorithm,  # TODO: decide default
     default_classifier=KNeighborsClassifier,
-    default_score_function=ScoreFunctionB(learning_algorithm=KNeighborsClassifier),
+    default_score_function=ScoreFunctionB(classifier=KNeighborsClassifier),
 
     # hyperparameter_for_score_function_experiment
     n_split=5,
@@ -98,7 +98,7 @@ def get_accuracy(y_true: Union, y_pred: Union) -> float:
 """"""""""""""""""""""""""""""""""""""""" Experiments """""""""""""""""""""""""""""""""""""""""
 
 
-def execute_generic_experiment(train_samples: TrainSamples, test_samples: TestSamples, initialized_learning_algorithm: LearningAlgorithm) -> float:
+def execute_generic_experiment(train_samples: TrainSamples, test_samples: TestSamples, initialized_learning_algorithm: Type[LearningAlgorithm]) -> float:
     initialized_learning_algorithm.fit(train_samples=train_samples, features_costs=EXPERIMENTS_PARAMS["features_costs"])
     y_pred = initialized_learning_algorithm.predict(samples=test_samples,
                                                     given_features=EXPERIMENTS_PARAMS["given_features"],
@@ -113,7 +113,7 @@ def hyperparameter_for_score_function_experiment(train_samples: TrainSamples):
     for alpha in alpha_values:
         accuracy = 0
         for train_fold, test_fold in folds.split(train_samples):
-            score_function = ScoreFunctionA(learning_algorithm=EXPERIMENTS_PARAMS["default_classifier"], alpha=alpha)
+            score_function = ScoreFunctionA(classifier=EXPERIMENTS_PARAMS["default_classifier"], alpha=alpha)
             learning_algorithm = EXPERIMENTS_PARAMS["default_learning_algorithm"](learning_algorithm=EXPERIMENTS_PARAMS["default_classifier"], score_function=score_function)  # TODO: add params
             learning_algorithm.fit(np.take(train_samples, train_fold, 0), EXPERIMENTS_PARAMS["features_costs"])
             accuracy += learning_algorithm.predict(np.take(train_samples, test_fold, 0), EXPERIMENTS_PARAMS["given_features"], EXPERIMENTS_PARAMS["maximal_cost"])
@@ -157,7 +157,7 @@ def best_classifier_experiment(train_samples: TrainSamples, test_samples: TestSa
     accuracies = []
     for classifier_type, classifier_parameters in zip(EXPERIMENTS_PARAMS['classifiers'], EXPERIMENTS_PARAMS["parameters_for_classifiers"]):
         classifier = classifier_type(classifier_parameters)
-        learning_algorithm = EXPERIMENTS_PARAMS["learning_algorithm_for_classifier_experiment"](learning_algorithm=classifier)  # TODO: during experiments, verify the parameters for init function
+        learning_algorithm = EXPERIMENTS_PARAMS["learning_algorithm_for_classifier_experiment"](classifier=classifier)  # TODO: during experiments, verify the parameters for init function
         accuracies.append(execute_generic_experiment(train_samples, test_samples, learning_algorithm))
 
     print_graph(GRAPHS_PARAMS["x_values_best_classifier"], accuracies, GRAPHS_PARAMS["x_label_best_classifier"], GRAPHS_PARAMS["y_label_best_classifier"])

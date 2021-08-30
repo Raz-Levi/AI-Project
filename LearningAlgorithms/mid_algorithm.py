@@ -13,12 +13,12 @@ class MaxVarianceAlgorithm(SequenceAlgorithm):
     """
     A partially sophisticated algorithm that choose to buy the feature with the most variance in each stage.
     """
-    def __init__(self, learning_algorithm: sklearn.base.ClassifierMixin):
+    def __init__(self, classifier: sklearn.base.ClassifierMixin):
         """
         Init function.
-        :param learning_algorithm: sklearn's classifier. the function saves it and uses it later.
+        :param classifier: sklearn's classifier. the function saves it and uses it later.
         """
-        super().__init__(learning_algorithm)
+        super().__init__(classifier)
         self._train_samples = None
         self._features_costs = None
         self._features_by_corr = None
@@ -38,7 +38,7 @@ class MaxVarianceAlgorithm(SequenceAlgorithm):
         self._features_by_corr = np.array(args_sort[::-1]).tolist()
 
     # Private Methods
-    def _buy_features(self, given_features: list[int], maximal_cost: float) -> list[int]:
+    def _buy_features(self, given_features: GivenFeatures, maximal_cost: float) -> GivenFeatures:
         """
         A method for choosing the supplementary features.
         :param given_features: list of the indices of the chosen features.

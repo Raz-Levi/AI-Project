@@ -24,7 +24,7 @@ class LearningAlgorithm(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def predict(self, samples: TestSamples, given_features: list[int], maximal_cost: float) -> Classes:
+    def predict(self, samples: TestSamples, given_features: GivenFeatures, maximal_cost: float) -> Classes:
         """
         An abstract method for predicting the class labels for the provided data.
         :param samples: test samples of shape (n_samples, n_features), i.e samples are in the rows.
@@ -40,15 +40,15 @@ class SequenceAlgorithm(LearningAlgorithm):
     An abstract naive algorithm that chooses simply features to add to the given features according to the given budget.
     """
     # Public Methods
-    def __init__(self, learning_algorithm: sklearn.base.ClassifierMixin):
+    def __init__(self, classifier: sklearn.base.ClassifierMixin):
         """
         Init function.
-        :param learning_algorithm: sklearn's classifier. the function saves it and uses it later.
+        :param classifier: sklearn's classifier. the function saves it and uses it later.
         """
         super().__init__()
         self._train_samples = None
         self._features_costs = []
-        self._learning_algorithm = learning_algorithm
+        self._classifier = classifier
 
     def fit(self, train_samples: TrainSamples, features_costs: list[float]):
         """
@@ -61,7 +61,7 @@ class SequenceAlgorithm(LearningAlgorithm):
         self._train_samples = train_samples
         self._features_costs = features_costs
 
-    def predict(self, samples: TestSamples, given_features: list[int], maximal_cost: float) -> Classes:
+    def predict(self, samples: TestSamples, given_features: GivenFeatures, maximal_cost: float) -> Classes:
         """
         Predicts the class labels for the provided data. the function chooses simply features to add to the given
         features according to the given budget and runs the fit and predict function of the given sklearn's classifier
@@ -72,12 +72,12 @@ class SequenceAlgorithm(LearningAlgorithm):
         :return: Classes of shape (n_samples,) contains the class labels for each data sample.
         """
         given_features = self._buy_features(given_features, maximal_cost)
-        self._learning_algorithm.fit(self._train_samples.samples[:, given_features], self._train_samples.classes)
-        return self._learning_algorithm.predict(samples[:, given_features])
+        self._classifier.fit(self._train_samples.samples[:, given_features], self._train_samples.classes)
+        return self._classifier.predict(samples[:, given_features])
 
     # Private Methods
     @abc.abstractmethod
-    def _buy_features(self, given_features: list[int], maximal_cost: float) -> list[int]:
+    def _buy_features(self, given_features: GivenFeatures, maximal_cost: float) -> GivenFeatures:
         """
         An abstract method for choosing the supplementary features.
         :param given_features: list of the indices of the chosen features.

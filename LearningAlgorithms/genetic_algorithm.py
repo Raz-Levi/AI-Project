@@ -3,19 +3,14 @@ This module contains a search algorithm based on a genetic algorithm
 """
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
-import random
-from typing import List
+from General.utils import *
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
-import numpy as np
-import pandas as pd
-import sklearn
 from deap import creator, base, tools, algorithms
-from General.score import ScoreFunction
-import General.utils
-from LearningAlgorithms.abstract_algorithm import SequenceAlgorithm
 from sklearn.model_selection import train_test_split
 
+from General.score import ScoreFunction
+from LearningAlgorithms.abstract_algorithm import SequenceAlgorithm
 """"""""""""""""""""""""""""""""""""""""""" Classes """""""""""""""""""""""""""""""""""""""""""
 
 
@@ -24,18 +19,18 @@ class GeneticAlgorithm(SequenceAlgorithm):
     A search algorithm based on a genetic algorithm.
     """
 
-    def __init__(self, number_of_features: int, learning_algorithm: sklearn.base.ClassifierMixin,
+    def __init__(self, number_of_features: int, classifier: sklearn.base.ClassifierMixin,
                  score_function: ScoreFunction, alpha_for_score_function: [float] = 1):
 
-        super().__init__(learning_algorithm)
+        super().__init__(classifier)
 
-        # self._score_function = score_function(learning_algorithm, alpha_for_score_function)
+        # self._score_function = score_function(classifier, alpha_for_score_function)
 
         self._all_features = [i for i in range(number_of_features)]
         self._max_cost = None
         self._given_features = None
 
-    def _buy_features(self, given_features: list[int], maximal_cost: float) -> list[int]:
+    def _buy_features(self, given_features: GivenFeatures, maximal_cost: float) -> GivenFeatures:
         """
         this function choose from the best subsets of features calculated by the genetic algorithm
         the one which is valid according to our parameters
@@ -121,7 +116,7 @@ class GeneticAlgorithm(SequenceAlgorithm):
         :param individual: a "genome" - subset of features.
         :return: the legality of the given genome.
         """
-        added_features = General.utils.get_complementary_set(individual, self._given_features)
+        added_features = get_complementary_set(individual, self._given_features)
         cost = self._calc_subset_cost(list(added_features))
         if cost > self._max_cost:
             return False
