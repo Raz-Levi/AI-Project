@@ -14,9 +14,9 @@ class ScoreFunction(abc.ABC):
     An abstract class for ScoreFunction.
     """
     # Public Methods
-    def __init__(self, learning_algorithm: sklearn.base.ClassifierMixin = None, alpha: int = 1):
+    def __init__(self, classifier: sklearn.base.ClassifierMixin = None, alpha: int = 1):
         super().__init__()
-        self._learning_algorithm = learning_algorithm
+        self._classifier = classifier
         self._alpha = alpha
 
     def __call__(self, *args, **kwargs):
@@ -24,7 +24,7 @@ class ScoreFunction(abc.ABC):
 
     # Private Methods
     @abc.abstractmethod
-    def _execute_function(self, train_samples: TrainSamples, given_features: list[int],
+    def _execute_function(self, train_samples: TrainSamples, given_features: GivenFeatures,
                           new_feature: int, costs_list: list[float]) -> float:
         """"
         this function will execute the score function
@@ -37,11 +37,11 @@ class ScoreFunctionA(ScoreFunction):
     return the feature score according to the theory we explain in the PDF.
     """
     # Public Methods
-    def __init__(self, alpha: int = 1, learning_algorithm: sklearn.base.ClassifierMixin = None):
-        super().__init__(learning_algorithm, alpha)
+    def __init__(self, alpha: int = 1, classifier: sklearn.base.ClassifierMixin = None):
+        super().__init__(classifier, alpha)
 
     # Private Methods
-    def _execute_function(self, train_samples: TrainSamples, given_features: list[int],
+    def _execute_function(self, train_samples: TrainSamples, given_features: GivenFeatures,
                           new_feature: int, costs_list: list[float]) -> float:
         price = costs_list[new_feature]
         frac = (self._get_correlation_to_feature(train_samples.classes, new_feature, train_samples) /
@@ -62,17 +62,17 @@ class ScoreFunctionB(ScoreFunction):
     return the feature score according to the theory we explain in the PDF.
     """
     # Public Methods
-    def __init__(self, alpha: int = 1, learning_algorithm: sklearn.base.ClassifierMixin = None):
-        super().__init__(learning_algorithm, alpha)
+    def __init__(self, alpha: int = 1, classifier: sklearn.base.ClassifierMixin = None):
+        super().__init__(classifier, alpha)
 
     # Private Methods
-    def _execute_function(self, train_samples: TrainSamples, given_features: list[int],
+    def _execute_function(self, train_samples: TrainSamples, given_features: GivenFeatures,
                           new_feature: int, costs_list: list[float]) -> float:
         price = costs_list[new_feature]
         certainty = self._get_certainty(train_samples, given_features, new_feature)
         return certainty / price
 
-    def _get_certainty(self, train_samples: TrainSamples, given_features: list[int],
+    def _get_certainty(self, train_samples: TrainSamples, given_features: GivenFeatures,
                        new_feature: int):
         """
         return the level of certainty according to the theory we explain in the PDF.
