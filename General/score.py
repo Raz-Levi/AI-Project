@@ -80,8 +80,8 @@ class ScoreFunctionB(ScoreFunction):
         """
         new_features = np.append(given_features, [new_feature])
         data = pd.DataFrame(train_samples.samples)
-        self._learning_algorithm.fit(data[new_features], train_samples.classes)
-        probabilities = self._learning_algorithm.predict_proba(data[new_features])
+        self._classifier.fit(data[new_features], train_samples.classes)
+        probabilities = self._classifier.predict_proba(data[new_features])
         certainty = self._calc_total_certainty(probabilities)
         return 1 - certainty
 
