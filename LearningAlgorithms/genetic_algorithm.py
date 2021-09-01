@@ -16,6 +16,7 @@ from LearningAlgorithms.abstract_algorithm import SequenceAlgorithm
 class GeneticAlgorithm(SequenceAlgorithm):
     """
     A search algorithm based on a genetic algorithm.
+    in case of there isn't a valid solution, a ValueError will be thrown.
     """
 
     def __init__(self, classifier: sklearn.base.ClassifierMixin):
@@ -23,6 +24,12 @@ class GeneticAlgorithm(SequenceAlgorithm):
         self._all_features = None
         self._max_cost = None
         self._given_features = None
+
+        self._random_state = 42
+        self._test_size = 0.20
+        self._max_iter = 200
+        self._num_pop = 50
+        self._num_gen = 8
 
     def fit(self, train_samples: TrainSamples, features_costs: list[float]):
         """
@@ -58,9 +65,10 @@ class GeneticAlgorithm(SequenceAlgorithm):
         """
         X_trainAndTest, X_validation, y_trainAndTest, y_validation = train_test_split(self._train_samples.samples,
                                                                                       self._train_samples.classes,
-                                                                                      test_size=0.20, random_state=42)
-        X_train, X_test, y_train, y_test = train_test_split(X_trainAndTest, y_trainAndTest, test_size=0.20,
-                                                            random_state=42)
+                                                                                      test_size=self._test_size,
+                                                                                      random_state=self._random_state)
+        X_train, X_test, y_train, y_test = train_test_split(X_trainAndTest, y_trainAndTest, test_size=self._test_size,
+                                                            random_state=self._random_state)
 
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
         creator.create("Individual", list, fitness=creator.FitnessMax)
@@ -95,7 +103,7 @@ class GeneticAlgorithm(SequenceAlgorithm):
         """
         this function return the first item in the valid subsets list if exist.
         :param subsets: subset of features.
-        :return: a valid subset of features.
+        :return: a valid subset of features. in case of there isn't a valid solution, a ValueError will be thrown.
         """
         valid = []
         for subset in subsets:
@@ -156,7 +164,7 @@ class GeneticAlgorithm(SequenceAlgorithm):
         X_trainOhFeatures = X_trainOhFeatures.drop(list(removeFromTrain), axis=1)
         X_testOhFeatures = X_testOhFeatures.drop(list(removeFromTest), axis=1)
 
-        clf = LogisticRegression(max_iter=200)
+        clf = LogisticRegression(max_iter=self._max_iter)
         clf.fit(X_trainOhFeatures, y_train)
         predictions = clf.predict(X_testOhFeatures)
         accuracy = accuracy_score(y_test, predictions)
@@ -164,17 +172,14 @@ class GeneticAlgorithm(SequenceAlgorithm):
         # Return calculated accuracy as fitness
         return accuracy,
 
-    @staticmethod
-    def _get_HOF(toolbox):
+    def _get_HOF(self, toolbox):
         """
         return the hall of fame - the best individuals (Genome : List[int]) in the population (List[List[int]]).
         :param toolbox:
         :return: HOF
         """
-        numPop = 50
-        numGen = 8
-        pop = toolbox.population(numPop * numGen)
-        hof = tools.HallOfFame(numPop * numGen)
+        pop = toolbox.population(self._num_pop * self._num_gen)
+        hof = tools.HallOfFame(self._num_pop * self._num_gen)
         stats = tools.Statistics(lambda ind: ind.fitness.values)
         stats.register("avg", np.mean)
         stats.register("std", np.std)
@@ -182,7 +187,7 @@ class GeneticAlgorithm(SequenceAlgorithm):
         stats.register("max", np.max)
 
         # Launch genetic algorithm
-        pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=numGen, stats=stats, halloffame=hof,
+        pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=self._num_gen, stats=stats, halloffame=hof,
                                        verbose=True)
 
         # Return the hall of fame
