@@ -5,6 +5,7 @@ Module for executing experiments
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 
 from utils import *
+# from Tests.unit_test import get_features_cost_in_order  # TODO: uncomment
 from General.score import ScoreFunctionA, ScoreFunctionB
 from LearningAlgorithms.abstract_algorithm import LearningAlgorithm
 from LearningAlgorithms.naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
@@ -24,12 +25,13 @@ from simpleai.search.local import hill_climbing
 
 """"""""""""""""""""""""""""""""""""""""" Parameters """""""""""""""""""""""""""""""""""""""""
 
-    datasets_path=[],
-    class_index=60,
-    train_ratio=200,
+EXPERIMENTS_PARAMS = dict(
+    datasets_path=["../DataSets/WaterQualityDataSet/waterQuality_small.csv", "../DataSets/WaterQualityDataSet/waterQuality_medium.csv", "../DataSets/WaterQualityDataSet/waterQuality_big.csv"],
+    class_index=20,
+    train_ratio=None,
     features_costs=[],
-    given_features=[1, 3, 6, 8, 11, 15, 30, 33, 36, 41, 45, 49, 51, 58],
-    maximal_cost=400,
+    given_features=[1, 3, 6, 8],
+    maximal_cost=100,
     default_learning_algorithm=GraphSearchAlgorithm,
     default_classifier=KNeighborsClassifier,
     default_score_function=ScoreFunctionB(classifier=KNeighborsClassifier(1)),
@@ -81,7 +83,7 @@ GRAPHS_PARAMS = dict(
     y_label_score_function="Accuracy",
 
     # best_algorithms_experiment
-    x_values_best_algorithm=["Empty", "Random", "Optimal", "MaxVariance", "GraphSearch", "LocalSearch", "Genetic"],
+    x_values_best_algorithm=["Empty", "Random", "Optimal", "MaxVariance", "Graph", "Local", "Genetic"],
     x_label_best_algorithm="Algorithm",
     y_label_best_algorithm="Accuracy",
 
@@ -102,6 +104,9 @@ GRAPHS_PARAMS = dict(
 def get_accuracy(y_true: Union, y_pred: Union) -> float:
     return sklearn.metrics.accuracy_score(y_true, y_pred)
 
+
+def get_features_cost_in_order(features_num: int) -> List[int]:  # TODO: delete
+    return list(range(1, features_num + 1))
 
 """"""""""""""""""""""""""""""""""""""""" Experiments """""""""""""""""""""""""""""""""""""""""
 
@@ -148,10 +153,8 @@ def best_algorithms_experiment(train_samples: TrainSamples, test_samples: TestSa
     accuracies = []
     features_cost = get_features_cost_in_order(train_samples.get_features_num())
     for algorithm_type, algorithm_parameters in zip(EXPERIMENTS_PARAMS['learning_algorithms'], EXPERIMENTS_PARAMS['parameters_for_algorithms']):
-        accuracies.append(execute_generic_experiment(train_samples, test_samples, learning_algorithm))
-
-        print(f'{algorithm_type} start')
         learning_algorithm = algorithm_type(**algorithm_parameters)
+        accuracies.append(execute_generic_experiment(train_samples, test_samples, learning_algorithm, features_cost))
     print_graph(GRAPHS_PARAMS["x_values_best_algorithm"], accuracies, GRAPHS_PARAMS["x_label_best_algorithm"], GRAPHS_PARAMS["y_label_best_algorithm"])
 
 
@@ -180,10 +183,10 @@ def best_classifier_experiment(train_samples: TrainSamples, test_samples: TestSa
 
 def execute_experiments():
     for dataset_path in EXPERIMENTS_PARAMS["datasets_path"]:
-
+        train_samples, test_samples = get_dataset(dataset_path, class_index=EXPERIMENTS_PARAMS["class_index"],
+                                                  train_ratio=EXPERIMENTS_PARAMS["train_ratio"], random_seed=0, shuffle=True)
         hyperparameter_for_score_function_experiment(train_samples)
         score_function_experiment(train_samples, test_samples)
-        train_samples, test_samples = get_dataset(dataset_path, class_index=EXPERIMENTS_PARAMS["class_index"],
         best_algorithms_experiment(train_samples, test_samples)
         search_algorithm_experiment(train_samples, test_samples)
         best_classifier_experiment(train_samples, test_samples)

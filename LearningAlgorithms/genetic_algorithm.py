@@ -19,13 +19,14 @@ class GeneticAlgorithm(SequenceAlgorithm):
     in case of there isn't a valid solution, a ValueError will be thrown.
     """
 
-    def __init__(self, classifier: sklearn.base.ClassifierMixin, considered_feature_num: Optional[int] = None):
+    def __init__(self, classifier: sklearn.base.ClassifierMixin, considered_feature_num: Optional[int] = None, random_state: Optional[int] = 42):
         super().__init__(classifier)
         self._all_features = considered_feature_num
         self._max_cost = None
         self._given_features = None
 
-        self._random_state = 42
+        # parameters for the algorithm
+        self._random_state = random_state
         self._test_size = 0.20
         self._max_iter = 200
         self._num_pop = 50
