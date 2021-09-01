@@ -304,11 +304,11 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
 class TestGeneticAlgorithm(unittest.TestCase):
     # tests functions
     def test_initialization(self):
-        algorithm = GeneticAlgorithm(FEATURES_NUM, CLASSIFIER, ScoreFunctionA())
+        algorithm = GeneticAlgorithm(classifier=CLASSIFIER)
         return type(algorithm) == GeneticAlgorithm
 
     def test_buy_features(self):
-        algorithm = GeneticAlgorithm(FEATURES_NUM, CLASSIFIER, ScoreFunctionA())
+        algorithm = GeneticAlgorithm(classifier=CLASSIFIER)
         train_samples, _ = get_dataset(HEART_FAILURE_SAMPLES_PATH, train_ratio=TRAIN_RATIO, class_index=CLASS_INDEX)
         algorithm.fit(train_samples, FEATURES_COST_LARGE)
         res = algorithm._buy_features(GIVEN_FEATURES_BATCH[0], MAXIMAL_COST_LOW)

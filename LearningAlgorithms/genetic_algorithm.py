@@ -9,7 +9,6 @@ from sklearn.metrics import accuracy_score
 from deap import creator, base, tools, algorithms
 from sklearn.model_selection import train_test_split
 
-from General.score import ScoreFunction
 from LearningAlgorithms.abstract_algorithm import SequenceAlgorithm
 """"""""""""""""""""""""""""""""""""""""""" Classes """""""""""""""""""""""""""""""""""""""""""
 
@@ -19,16 +18,23 @@ class GeneticAlgorithm(SequenceAlgorithm):
     A search algorithm based on a genetic algorithm.
     """
 
-    def __init__(self, number_of_features: int, classifier: sklearn.base.ClassifierMixin,
-                 score_function: ScoreFunction, alpha_for_score_function: [float] = 1):
-
+    def __init__(self, classifier: sklearn.base.ClassifierMixin):
         super().__init__(classifier)
-
-        # self._score_function = score_function(classifier, alpha_for_score_function)
-
-        self._all_features = [i for i in range(number_of_features)]
+        self._all_features = None
         self._max_cost = None
         self._given_features = None
+
+    def fit(self, train_samples: TrainSamples, features_costs: list[float]):
+        """
+        Trains the classifier. the function saves the train samples and the features costs for the prediction.
+        :param train_samples: training dataset contains training data of shape (n_samples, n_features), i.e samples are
+        in the rows, and target values of shape (n_samples,). the function saves it.
+        :param features_costs: list in length number of features that contains the costs of each feature according to
+        indices. in first index you will find the cost of the first feature, etc. the function saves it.
+        """
+        self._train_samples = train_samples
+        self._features_costs = features_costs
+        self._all_features = [i for i in range(train_samples.get_features_num())]
 
     def _buy_features(self, given_features: GivenFeatures, maximal_cost: float) -> GivenFeatures:
         """
@@ -88,15 +94,15 @@ class GeneticAlgorithm(SequenceAlgorithm):
     def _get_valid_subset(self, subsets: List[List[int]]) -> List[int]:
         """
         this function return the first item in the valid subsets list if exist.
-        :param subsets:
+        :param subsets: subset of features.
         :return: a valid subset of features.
         """
         valid = []
         for subset in subsets:
             if self._is_legal_subset(subset):
                 valid.append(subset)
-        if not valid:
-            raise ValueError
+        if not len(valid):
+            raise ValueError("No Valid Solution")
         return valid[0]
 
     def _calc_subset_cost(self, subset: list[int]) -> float:
