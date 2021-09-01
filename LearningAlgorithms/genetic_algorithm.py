@@ -19,9 +19,9 @@ class GeneticAlgorithm(SequenceAlgorithm):
     in case of there isn't a valid solution, a ValueError will be thrown.
     """
 
-    def __init__(self, classifier: sklearn.base.ClassifierMixin):
+    def __init__(self, classifier: sklearn.base.ClassifierMixin, considered_feature_num: Optional[int] = None):
         super().__init__(classifier)
-        self._all_features = None
+        self._all_features = considered_feature_num
         self._max_cost = None
         self._given_features = None
 
@@ -41,7 +41,7 @@ class GeneticAlgorithm(SequenceAlgorithm):
         """
         self._train_samples = train_samples
         self._features_costs = features_costs
-        self._all_features = [i for i in range(train_samples.get_features_num())]
+        self._all_features = [i for i in range(train_samples.get_features_num() if self._all_features is None else self._all_features)]
 
     def _buy_features(self, given_features: GivenFeatures, maximal_cost: float) -> GivenFeatures:
         """

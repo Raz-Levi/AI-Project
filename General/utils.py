@@ -133,13 +133,16 @@ def get_dataset(path: str, class_index: int = 0, train_ratio=0.25, random_seed: 
                                             preprocess=categorical_to_numeric,
                                             categories=categories,
                                             **kw)
+    np.nan_to_num(samples)
+    np.nan_to_num(classes)
+    classes = classes.astype('int')
     shuffle = shuffle if type(random_seed) == int else False
     train_samples, test_samples, train_classes, test_classes = sklearn.model_selection.train_test_split(samples,
                                                                                                         classes,
                                                                                                         test_size=train_ratio,
                                                                                                         random_state=random_seed,
                                                                                                         shuffle=shuffle,
-                                                                                                        stratify=None if not shuffle else True)
+                                                                                                        stratify=None if not shuffle else classes)
     return TrainSamples(train_samples, train_classes), TestSamples(test_samples, test_classes)
 
 

@@ -57,6 +57,7 @@ class TestUtils(unittest.TestCase):
     def _test_get_samples_from_csv(self, path: str, expected_matrix: np.array, preprocess: Callable = None, **kw):
         for col in range(expected_matrix.shape[1]):
             samples, classes = get_samples_from_csv(path=path, class_index=col, preprocess=preprocess, **kw)
+            classes = classes.astype('int')
             self.assertTrue(self._compare_samples(samples=samples,
                                                   classes=classes,
                                                   expected_matrix=expected_matrix,
@@ -74,7 +75,7 @@ class TestUtils(unittest.TestCase):
     @staticmethod
     def _compare_samples(samples: np.array, classes: np.array, expected_matrix: np.array, class_index: int, **kw) -> bool:
         complementary_list = list(get_complementary_set(range(expected_matrix.shape[1]), [class_index]))
-        expected_samples, expected_classes = expected_matrix[:, complementary_list], expected_matrix[:, [class_index]]
+        expected_samples, expected_classes = expected_matrix[:, complementary_list], expected_matrix[:, [class_index]].astype('int')
         return type(samples) == np.ndarray and np.array_equal(samples, expected_samples) and type(
             classes) == np.ndarray and np.array_equal(classes, expected_classes.flatten())
 
@@ -308,7 +309,7 @@ class TestGeneticAlgorithm(unittest.TestCase):
         return type(algorithm) == GeneticAlgorithm
 
     def test_buy_features(self):
-        algorithm = GeneticAlgorithm(classifier=CLASSIFIER)
+        algorithm = GeneticAlgorithm(classifier=CLASSIFIER, considered_feature_num=CONSIDERED_FEATURES_NUM)
         train_samples, _ = get_dataset(HEART_FAILURE_SAMPLES_PATH, train_ratio=TRAIN_RATIO, class_index=CLASS_INDEX)
         algorithm.fit(train_samples, FEATURES_COST_LARGE)
         res = algorithm._buy_features(GIVEN_FEATURES_BATCH[0], MAXIMAL_COST_LOW)
