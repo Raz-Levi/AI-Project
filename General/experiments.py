@@ -5,7 +5,7 @@ Module for executing experiments
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 
 from utils import *
-# from Tests.unit_test import get_features_cost_in_order  # TODO: uncomment
+from Tests.unit_test import get_features_cost_in_order
 from General.score import ScoreFunctionA, ScoreFunctionB
 from LearningAlgorithms.abstract_algorithm import LearningAlgorithm
 from LearningAlgorithms.naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
@@ -102,9 +102,6 @@ GRAPHS_PARAMS = dict(
 def get_accuracy(y_true: Union, y_pred: Union) -> float:
     return sklearn.metrics.accuracy_score(y_true, y_pred)
 
-
-def get_features_cost_in_order(features_num: int) -> List[int]:  # TODO: delete
-    return list(range(1, features_num + 1))
 
 """"""""""""""""""""""""""""""""""""""""" Experiments """""""""""""""""""""""""""""""""""""""""
 
