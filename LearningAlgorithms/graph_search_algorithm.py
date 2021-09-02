@@ -222,7 +222,7 @@ class LocalSearchAlgorithm(SequenceAlgorithm):
     """
 
     # Public Methods
-    def __init__(self, classifier: sklearn.base.ClassifierMixin, local_search_algorithm: Callable, score_function: ScoreFunction):
+    def __init__(self, classifier: sklearn.base.ClassifierMixin, local_search_algorithm: Callable, score_function: ScoreFunction, **kw):
         """
         Init function for LocalSearchAlgorithm algorithm.
         :param classifier: sklearn's classifier. the function saves it and uses it later.
@@ -232,6 +232,7 @@ class LocalSearchAlgorithm(SequenceAlgorithm):
         super().__init__(classifier)
         self._local_search_algorithm = local_search_algorithm
         self._score_function = score_function
+        self._kw = kw
 
     # Private Methods
     def _buy_features(self, given_features: GivenFeatures, maximal_cost: float) -> GivenFeatures:
@@ -258,4 +259,4 @@ class LocalSearchAlgorithm(SequenceAlgorithm):
                                         total_features=self._train_samples.get_features_num(),
                                         maximal_cost=maximal_cost,
                                         features_costs=self._features_costs)
-        return self._local_search_algorithm(problem=initial_state).state
+        return self._local_search_algorithm(initial_state, **self._kw).state

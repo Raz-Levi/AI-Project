@@ -28,7 +28,7 @@ class GeneticAlgorithm(SequenceAlgorithm):
         # parameters for the algorithm
         self._random_state = random_state
         self._test_size = 0.20
-        self._max_iter = 200
+        self._max_iter = 400
         self._num_pop = 50
         self._num_gen = 8
 
