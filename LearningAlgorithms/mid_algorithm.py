@@ -19,8 +19,6 @@ class MaxVarianceAlgorithm(SequenceAlgorithm):
         :param classifier: sklearn's classifier. the function saves it and uses it later.
         """
         super().__init__(classifier)
-        self._train_samples = None
-        self._features_costs = None
         self._features_by_corr = None
 
     def fit(self, train_samples: TrainSamples, features_costs: list[float]):

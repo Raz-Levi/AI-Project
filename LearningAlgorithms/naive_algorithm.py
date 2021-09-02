@@ -50,8 +50,9 @@ class RandomAlgorithm(SequenceAlgorithm):
     """
     A naive algorithm that chooses randomly features to add to the given features according to the given budget.
     """
-    def __init__(self, classifier: sklearn.base.ClassifierMixin):
+    def __init__(self, classifier: sklearn.base.ClassifierMixin, random_seed: Optional[int] = 0):
         super().__init__(classifier)
+        self._random_seed = random_seed
 
     # Private Methods
     def _buy_features(self, given_features: GivenFeatures, maximal_cost: float) -> GivenFeatures:
@@ -63,6 +64,7 @@ class RandomAlgorithm(SequenceAlgorithm):
         :return: the updated given features including all the chosen features.
         """
         available_features = get_complementary_set(range(self._train_samples.get_features_num()), given_features)
+        random.seed(self._random_seed)
         while len(available_features) and maximal_cost:
             chosen_feature = random.choice(list(available_features))
             available_features -= {chosen_feature}

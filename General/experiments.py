@@ -5,11 +5,13 @@ Module for executing experiments
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 
 from utils import *
+# from Tests.unit_test import get_features_cost_in_order  # TODO: uncomment
 from General.score import ScoreFunctionA, ScoreFunctionB
 from LearningAlgorithms.abstract_algorithm import LearningAlgorithm
 from LearningAlgorithms.naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
 from LearningAlgorithms.mid_algorithm import MaxVarianceAlgorithm
-from LearningAlgorithms.graph_search_algorithm import GraphSearchAlgorithm
+from LearningAlgorithms.graph_search_algorithm import GraphSearchAlgorithm, LocalSearchAlgorithm
+from LearningAlgorithms.genetic_algorithm import GeneticAlgorithm
 
 import sklearn.metrics
 from sklearn.model_selection import KFold
@@ -19,18 +21,20 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from networkx.algorithms.shortest_paths.astar import astar_path
 from networkx.algorithms.shortest_paths.generic import shortest_path
+from simpleai.search.local import hill_climbing
 
 """"""""""""""""""""""""""""""""""""""""" Parameters """""""""""""""""""""""""""""""""""""""""
 
-EXPERIMENTS_PARAMS = dict(  # TODO: update the parameters after we are deciding them
-    datasets_path=[],
-    train_ratio=1,
+EXPERIMENTS_PARAMS = dict(
+    datasets_path=["../DataSets/WaterQualityDataSet/waterQuality_small.csv", "../DataSets/WaterQualityDataSet/waterQuality_medium.csv", "../DataSets/WaterQualityDataSet/waterQuality_big.csv"],
+    class_index=20,
+    train_ratio=None,
     features_costs=[],
-    given_features=[],
-    maximal_cost=0,
-    default_learning_algorithm=GraphSearchAlgorithm,  # TODO: decide default
+    given_features=[1, 3, 6, 8],
+    maximal_cost=100,
+    default_learning_algorithm=GraphSearchAlgorithm,
     default_classifier=KNeighborsClassifier,
-    default_score_function=ScoreFunctionB(classifier=KNeighborsClassifier),
+    default_score_function=ScoreFunctionB(classifier=KNeighborsClassifier(1)),
 
     # hyperparameter_for_score_function_experiment
     n_split=5,
@@ -44,8 +48,14 @@ EXPERIMENTS_PARAMS = dict(  # TODO: update the parameters after we are deciding 
     learning_algorithms_param_for_score_functions=[],  # TODO: here we should insert parameters for the algorithms according their order in classifiers list
 
     # best_algorithms_experiment
-    learning_algorithms=[EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm, MaxVarianceAlgorithm, GraphSearchAlgorithm],  # TODO: add genetic algo
-    parameters_for_algorithms=[],  # TODO: here we should insert parameters for the algorithms according their order in classifiers list
+    learning_algorithms=[EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm, MaxVarianceAlgorithm, GraphSearchAlgorithm, LocalSearchAlgorithm, GeneticAlgorithm],
+    parameters_for_algorithms=[{"classifier": KNeighborsClassifier(1)},  # EmptyAlgorithm
+                               {"classifier": KNeighborsClassifier(1)},  # RandomAlgorithm
+                               {"classifier": KNeighborsClassifier(1)},  # OptimalAlgorithm
+                               {"classifier": KNeighborsClassifier(1)},  # MaxVarianceAlgorithm
+                               {"classifier": KNeighborsClassifier(1), "search_algorithm": astar_path, "score_function": ScoreFunctionB(classifier=KNeighborsClassifier(1))},  # GraphSearchAlgorithm
+                               {"classifier": KNeighborsClassifier(1), "local_search_algorithm": hill_climbing, "score_function": ScoreFunctionB(classifier=KNeighborsClassifier(1))},  # LocalSearchAlgorithm
+                               {"classifier": KNeighborsClassifier(3)}],  # GeneticAlgorithm
 
     # search_algorithm_experiment
     search_algorithms=[astar_path, shortest_path],
@@ -73,7 +83,7 @@ GRAPHS_PARAMS = dict(
     y_label_score_function="Accuracy",
 
     # best_algorithms_experiment
-    x_values_best_algorithm=["EmptyAlgorithm", "RandomAlgorithm", "OptimalAlgorithm", "MaxVarianceAlgorithm", "GraphSearchAlgorithm"],  # TODO: add genetic algo
+    x_values_best_algorithm=["Empty", "Random", "Optimal", "MaxVariance", "Graph", "Local", "Genetic"],
     x_label_best_algorithm="Algorithm",
     y_label_best_algorithm="Accuracy",
 
@@ -95,12 +105,17 @@ def get_accuracy(y_true: Union, y_pred: Union) -> float:
     return sklearn.metrics.accuracy_score(y_true, y_pred)
 
 
+def get_features_cost_in_order(features_num: int) -> List[int]:  # TODO: delete
+    return list(range(1, features_num + 1))
+
 """"""""""""""""""""""""""""""""""""""""" Experiments """""""""""""""""""""""""""""""""""""""""
 
 
-def execute_generic_experiment(train_samples: TrainSamples, test_samples: TestSamples, initialized_learning_algorithm: Type[LearningAlgorithm]) -> float:
-    initialized_learning_algorithm.fit(train_samples=train_samples, features_costs=EXPERIMENTS_PARAMS["features_costs"])
-    y_pred = initialized_learning_algorithm.predict(samples=test_samples,
+def execute_generic_experiment(train_samples: TrainSamples, test_samples: TestSamples, initialized_learning_algorithm: Type[LearningAlgorithm],
+                               features_cost: Optional[List[int]] = None) -> float:
+    features_cost = EXPERIMENTS_PARAMS["features_costs"] if features_cost is None else features_cost
+    initialized_learning_algorithm.fit(train_samples=train_samples, features_costs=features_cost)
+    y_pred = initialized_learning_algorithm.predict(samples=test_samples.samples,
                                                     given_features=EXPERIMENTS_PARAMS["given_features"],
                                                     maximal_cost=EXPERIMENTS_PARAMS["maximal_cost"])
     return get_accuracy(test_samples.classes, y_pred)
@@ -136,10 +151,10 @@ def score_function_experiment(train_samples: TrainSamples, test_samples: TestSam
 
 def best_algorithms_experiment(train_samples: TrainSamples, test_samples: TestSamples):
     accuracies = []
+    features_cost = get_features_cost_in_order(train_samples.get_features_num())
     for algorithm_type, algorithm_parameters in zip(EXPERIMENTS_PARAMS['learning_algorithms'], EXPERIMENTS_PARAMS['parameters_for_algorithms']):
-        learning_algorithm = algorithm_type(algorithm_parameters)  # TODO: during experiments, verify the parameters for init function
-        accuracies.append(execute_generic_experiment(train_samples, test_samples, learning_algorithm))
-
+        learning_algorithm = algorithm_type(**algorithm_parameters)
+        accuracies.append(execute_generic_experiment(train_samples, test_samples, learning_algorithm, features_cost))
     print_graph(GRAPHS_PARAMS["x_values_best_algorithm"], accuracies, GRAPHS_PARAMS["x_label_best_algorithm"], GRAPHS_PARAMS["y_label_best_algorithm"])
 
 
@@ -168,8 +183,8 @@ def best_classifier_experiment(train_samples: TrainSamples, test_samples: TestSa
 
 def execute_experiments():
     for dataset_path in EXPERIMENTS_PARAMS["datasets_path"]:
-        train_samples, test_samples = get_dataset(dataset_path, train_ratio=EXPERIMENTS_PARAMS["train_ratio"])
-
+        train_samples, test_samples = get_dataset(dataset_path, class_index=EXPERIMENTS_PARAMS["class_index"],
+                                                  train_ratio=EXPERIMENTS_PARAMS["train_ratio"], random_seed=0, shuffle=True)
         hyperparameter_for_score_function_experiment(train_samples)
         score_function_experiment(train_samples, test_samples)
         best_algorithms_experiment(train_samples, test_samples)
