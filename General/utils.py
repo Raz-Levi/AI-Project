@@ -146,6 +146,28 @@ def get_dataset(path: str, class_index: int = 0, train_ratio=0.25, random_seed: 
     return TrainSamples(train_samples, train_classes), TestSamples(test_samples, test_classes)
 
 
+def get_dataset_with_num_of_features(num_of_Features : int, path: str, class_index: int = 0, train_ratio=0.25, random_seed: Optional[int] = None,
+                shuffle: Optional[bool] = True, **kw) -> Tuple[TrainSamples, TestSamples]:
+    categories = {}
+    samples, classes = get_samples_from_csv(path=path,
+                                            class_index=class_index,
+                                            preprocess=categorical_to_numeric,
+                                            categories=categories,
+                                            **kw)
+    np.nan_to_num(samples)
+    np.nan_to_num(classes)
+    classes = classes.astype('int')
+    shuffle = shuffle if type(random_seed) == int else False
+    features = [i for i in range(num_of_Features)]
+    train_samples, test_samples, train_classes, test_classes = sklearn.model_selection.train_test_split(samples[:,features],
+                                                                                                        classes,
+                                                                                                        test_size=train_ratio,
+                                                                                                        random_state=random_seed,
+                                                                                                        shuffle=shuffle,
+                                                                                                        stratify=None if not shuffle else classes)
+    return TrainSamples(train_samples, train_classes), TestSamples(test_samples, test_classes)
+
+
 def get_complementary_set(elements_list: Union, existing_elements: Union) -> set:
     """
     Gets the complementary set of given set, i.e set of the elements in elements_list which are not in existing_elements.
