@@ -3,8 +3,6 @@ Module for executing experiments
 """
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
-import time
-import numpy as np
 from utils import *
 from Tests.unit_test import get_features_cost_in_order
 from General.score import ScoreFunctionA, ScoreFunctionB
@@ -14,9 +12,9 @@ from LearningAlgorithms.mid_algorithm import MaxVarianceAlgorithm
 from LearningAlgorithms.graph_search_algorithm import GraphSearchAlgorithm, LocalSearchAlgorithm
 from LearningAlgorithms.genetic_algorithm import GeneticAlgorithm
 
+import time
 import sklearn.metrics
 from sklearn.model_selection import KFold
-from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -29,7 +27,7 @@ EXPERIMENTS_PARAMS = dict(
     datasets_path=[
         "../DataSets/WaterQualityDataSet/waterQuality_small.csv",
         "../DataSets/WaterQualityDataSet/waterQuality_medium.csv",
-        "../DataSets/WaterQualityDataSet/waterQuality_big.csv",],
+        "../DataSets/WaterQualityDataSet/waterQuality_big.csv"],
     class_index=20,
     train_ratio=None,
     features_costs=[],
@@ -48,7 +46,6 @@ EXPERIMENTS_PARAMS = dict(
     # score_function_experiment
     score_functions=[ScoreFunctionA, ScoreFunctionB],
     parameters_for_score_functions={"classifier": KNeighborsClassifier(1), "alpha": 5},
-    parameters_for_score_functions=[5, 5],
     learning_algorithms_for_score_functions=[GraphSearchAlgorithm],
 
     # best_algorithms_experiment
@@ -65,19 +62,10 @@ EXPERIMENTS_PARAMS = dict(
     local_search_algorithms=[hill_climbing, hill_climbing_stochastic, simulated_annealing, hill_climbing_random_restarts, beam],
     parameters_for_local_search_algorithm=[{}, {"iterations_limit": 100}, {}, {"restarts_limit": 50}, {}],
 
-    # search_algorithm_experiment
-    search_algorithms=[astar_path, shortest_path],
-    parameters_for_search_algorithm=[None, "dijkstra", "bellman-ford"],
-
     # best_classifier_experiment
     learning_algorithm_for_classifier_experiment=GeneticAlgorithm,
-    classifiers=[ KNeighborsClassifier, RandomForestClassifier, LogisticRegression],
+    classifiers=[KNeighborsClassifier, RandomForestClassifier, LogisticRegression],
     parameters_for_classifiers=[[1], [5], [5]]
-
-    # MLP: https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html
-    # KNN: https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
-    # RandomForestClassifier: https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html
-    # LogisticRegression: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
 )
 
 GRAPHS_PARAMS = dict(
@@ -128,9 +116,6 @@ def get_accuracy(y_true: Union, y_pred: Union) -> float:
     return sklearn.metrics.accuracy_score(y_true, y_pred)
 
 
-def get_features_cost_in_order(features_num: int) -> List[int]:  # TODO: delete
-    return list(range(1, features_num + 1))
-
 """"""""""""""""""""""""""""""""""""""""" Experiments """""""""""""""""""""""""""""""""""""""""
 
 
@@ -177,6 +162,7 @@ def score_function_experiment(train_samples: TrainSamples, test_samples: TestSam
 
     print_graph(GRAPHS_PARAMS["x_values_score_function"], accuracies, GRAPHS_PARAMS["x_label_score_function"], GRAPHS_PARAMS["y_label_score_function"])
 
+
 def best_algorithms_experiment(train_samples: TrainSamples, test_samples: TestSamples):
     accuracies = []
     features_cost = get_features_cost_in_order(train_samples.get_features_num())
@@ -220,6 +206,7 @@ def run_time_experiment(train_samples: TrainSamples, test_samples: TestSamples):
         end = time.time()
         run_time = end - start
         run_times.append(run_time)
+
     print_graph(GRAPHS_PARAMS["x_values_run_times"], run_times, GRAPHS_PARAMS["x_label_run_times"],
                 GRAPHS_PARAMS["y_label_run_times"])
 
@@ -232,7 +219,6 @@ def num_of_features_to_run_time(dataset_path : str):
             train_samples, test_samples = get_dataset_with_num_of_features(d, dataset_path, class_index=EXPERIMENTS_PARAMS["class_index"],
                                                       train_ratio=EXPERIMENTS_PARAMS["train_ratio"], random_seed=0,
                                                       shuffle=True)
-            print(d)
             features_cost = get_features_cost_in_order(train_samples.get_features_num())
             start = time.time()
             learning_algorithm = algorithm_type(**algorithm_parameters)
@@ -240,6 +226,7 @@ def num_of_features_to_run_time(dataset_path : str):
             end = time.time()
             run_time = end - start
             run_times.append(run_time)
+
         print_graph(GRAPHS_PARAMS["x_values_run_times_features_num"], run_times, GRAPHS_PARAMS["x_label_run_times_features_num"],
                 GRAPHS_PARAMS["y_label_run_times_features_num"])
 
