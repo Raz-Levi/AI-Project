@@ -3,7 +3,8 @@ Module for executing experiments
 """
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
-
+import time
+import numpy as np
 from utils import *
 from Tests.unit_test import get_features_cost_in_order
 from General.score import ScoreFunctionA, ScoreFunctionB
@@ -25,7 +26,10 @@ from simpleai.search.local import hill_climbing, hill_climbing_stochastic, simul
 """"""""""""""""""""""""""""""""""""""""" Parameters """""""""""""""""""""""""""""""""""""""""
 
 EXPERIMENTS_PARAMS = dict(
-    datasets_path=["../DataSets/WaterQualityDataSet/waterQuality_small.csv", "../DataSets/WaterQualityDataSet/waterQuality_medium.csv", "../DataSets/WaterQualityDataSet/waterQuality_big.csv"],
+    datasets_path=[
+        "../DataSets/WaterQualityDataSet/waterQuality_small.csv",
+        "../DataSets/WaterQualityDataSet/waterQuality_medium.csv",
+        "../DataSets/WaterQualityDataSet/waterQuality_big.csv",],
     class_index=20,
     train_ratio=None,
     features_costs=[],
@@ -33,17 +37,19 @@ EXPERIMENTS_PARAMS = dict(
     maximal_cost=20,
     random_seed=0,
     default_learning_algorithm=GraphSearchAlgorithm,
-    default_classifier=KNeighborsClassifier(3),
-    default_score_function=ScoreFunctionB(classifier=KNeighborsClassifier(3)),
+    default_classifier=LogisticRegression(),
+    default_score_function=ScoreFunctionB(classifier=KNeighborsClassifier(1)),
 
     # hyperparameter_for_score_function_experiment
     n_split=5,
     random_state=0,
-    cv_values=[],  # TODO: decide on values
+    cv_values=[i for i in range(1, 20)],
 
     # score_function_experiment
     score_functions=[ScoreFunctionA, ScoreFunctionB],
     parameters_for_score_functions={"classifier": KNeighborsClassifier(1), "alpha": 5},
+    parameters_for_score_functions=[5, 5],
+    learning_algorithms_for_score_functions=[GraphSearchAlgorithm],
 
     # best_algorithms_experiment
     learning_algorithms=[EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm, MaxVarianceAlgorithm, GraphSearchAlgorithm, LocalSearchAlgorithm, GeneticAlgorithm],
@@ -59,10 +65,14 @@ EXPERIMENTS_PARAMS = dict(
     local_search_algorithms=[hill_climbing, hill_climbing_stochastic, simulated_annealing, hill_climbing_random_restarts, beam],
     parameters_for_local_search_algorithm=[{}, {"iterations_limit": 100}, {}, {"restarts_limit": 50}, {}],
 
+    # search_algorithm_experiment
+    search_algorithms=[astar_path, shortest_path],
+    parameters_for_search_algorithm=[None, "dijkstra", "bellman-ford"],
+
     # best_classifier_experiment
-    learning_algorithm_for_classifier_experiment=GraphSearchAlgorithm,  # TODO: think about it
-    classifiers=[MLPClassifier, KNeighborsClassifier, RandomForestClassifier, LogisticRegression],
-    parameters_for_classifiers=[]  # TODO: here we should insert parameters for the classifiers according their order in classifiers list
+    learning_algorithm_for_classifier_experiment=GeneticAlgorithm,
+    classifiers=[ KNeighborsClassifier, RandomForestClassifier, LogisticRegression],
+    parameters_for_classifiers=[[1], [5], [5]]
 
     # MLP: https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html
     # KNN: https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
@@ -80,6 +90,11 @@ GRAPHS_PARAMS = dict(
     x_label_score_function="Score Function",
     y_label_score_function="Accuracy",
 
+    # score_function_run_times_experiment
+    x_values_score_function_run_times=["ScoreFunctionA", "ScoreFunctionB"],
+    x_label_score_function_run_times="Score Function",
+    y_label_score_function_run_times="Run Time",
+
     # best_algorithms_experiment
     x_values_best_algorithm=["Empty", "Random", "Optimal", "MaxVariance", "Graph", "Local", "Genetic"],
     x_label_best_algorithm="Algorithm",
@@ -93,7 +108,17 @@ GRAPHS_PARAMS = dict(
     # best_classifier_experiment
     x_values_best_classifier=[classifier.__name__ for classifier in EXPERIMENTS_PARAMS["classifiers"]],
     x_label_best_classifier="Classifier",
-    y_label_best_classifier="Accuracy"
+    y_label_best_classifier="Accuracy",
+
+    # run_times_algorithms_experiment
+    x_values_run_times=["Empty", "Random", "Optimal", "MaxVariance", "Graph", "Local" "Genetic"],
+    x_label_run_times="Algorithm",
+    y_label_run_times="Run Time",
+
+    # run_times_features_algorithms_experiment
+    x_values_run_times_features_num=["15", "20", "25", "30", "35", "40", "45", "50", "55"],
+    x_label_run_times_features_num="number of features",
+    y_label_run_times_features_num="Run Time",
 )
 
 """"""""""""""""""""""""""""""""""""""""""" Utils """""""""""""""""""""""""""""""""""""""""""
@@ -102,6 +127,9 @@ GRAPHS_PARAMS = dict(
 def get_accuracy(y_true: Union, y_pred: Union) -> float:
     return sklearn.metrics.accuracy_score(y_true, y_pred)
 
+
+def get_features_cost_in_order(features_num: int) -> List[int]:  # TODO: delete
+    return list(range(1, features_num + 1))
 
 """"""""""""""""""""""""""""""""""""""""" Experiments """""""""""""""""""""""""""""""""""""""""
 
@@ -116,33 +144,38 @@ def execute_generic_experiment(train_samples: TrainSamples, test_samples: TestSa
     return get_accuracy(test_samples.classes, y_pred)
 
 
-def hyperparameter_for_score_function_experiment(train_samples: TrainSamples):
-    folds = KFold(n_splits=EXPERIMENTS_PARAMS["n_split"], shuffle=True, random_state=["random_state"])
+def hyperparameter_for_score_function_experiment(dataset_path: str):
+    dataset, classes = get_samples_from_csv(dataset_path, 20)
+    folds = KFold(n_splits=EXPERIMENTS_PARAMS["n_split"], shuffle=True, random_state=100)
     alpha_values, accuracies = EXPERIMENTS_PARAMS["cv_values"], []
 
     for alpha in alpha_values:
         accuracy = 0
-        for train_fold, test_fold in folds.split(train_samples):
+        for train_fold, test_fold in folds.split(dataset):
             score_function = ScoreFunctionA(classifier=EXPERIMENTS_PARAMS["default_classifier"], alpha=alpha)
-            learning_algorithm = EXPERIMENTS_PARAMS["default_learning_algorithm"](learning_algorithm=EXPERIMENTS_PARAMS["default_classifier"], score_function=score_function)  # TODO: add params
-            learning_algorithm.fit(np.take(train_samples, train_fold, 0), EXPERIMENTS_PARAMS["features_costs"])
-            accuracy += learning_algorithm.predict(np.take(train_samples, test_fold, 0), EXPERIMENTS_PARAMS["given_features"], EXPERIMENTS_PARAMS["maximal_cost"])
+            learning_algorithm = EXPERIMENTS_PARAMS["default_learning_algorithm"](
+                classifier=EXPERIMENTS_PARAMS["default_classifier"],
+                score_function=score_function, search_algorithm=astar_path)
+            t_samples = np.take(dataset, train_fold, 0)
+            t_classes = np.take(classes, train_fold, 0)
+            learning_algorithm.fit(TrainSamples(t_samples, t_classes), EXPERIMENTS_PARAMS["features_costs"])
+            t_samples = np.take(dataset, test_fold, 0)
+            test_samples = np.take(classes, test_fold, 0)
+            y_pred = learning_algorithm.predict(t_samples, EXPERIMENTS_PARAMS["given_features"], EXPERIMENTS_PARAMS["maximal_cost"])
+            accuracy += get_accuracy(test_samples, y_pred)
         accuracies.append(accuracy / EXPERIMENTS_PARAMS["n_split"])
 
     print_graph(alpha_values, accuracies, GRAPHS_PARAMS["x_label_cv"], GRAPHS_PARAMS["y_label_cv"])
-    # return alpha_values[int(np.argmax(accuracies))] # TODO: remove it after get the best param
 
 
 def score_function_experiment(train_samples: TrainSamples, test_samples: TestSamples):
     accuracies = []
-    for score_function_type in EXPERIMENTS_PARAMS["score_functions"]:
-        features_cost = get_features_cost_in_order(train_samples.get_features_num())
-        score_function = score_function_type(**EXPERIMENTS_PARAMS["parameters_for_score_functions"])
-        learning_algorithm = GraphSearchAlgorithm(EXPERIMENTS_PARAMS["default_classifier"], astar_path, score_function=score_function)
-        accuracies.append(execute_generic_experiment(train_samples, test_samples, learning_algorithm, features_cost))
+    for score_function_type, score_function_parameters in zip(EXPERIMENTS_PARAMS["score_functions"], EXPERIMENTS_PARAMS["parameters_for_score_functions"]):
+        score_function = score_function_type(score_function_parameters)
+        learning_algorithm = GraphSearchAlgorithm(KNeighborsClassifier(1), astar_path, score_function)
+        accuracies.append(execute_generic_experiment(train_samples, test_samples, learning_algorithm))
 
     print_graph(GRAPHS_PARAMS["x_values_score_function"], accuracies, GRAPHS_PARAMS["x_label_score_function"], GRAPHS_PARAMS["y_label_score_function"])
-
 
 def best_algorithms_experiment(train_samples: TrainSamples, test_samples: TestSamples):
     accuracies = []
@@ -167,12 +200,48 @@ def local_search_algorithm_experiment(train_samples: TrainSamples, test_samples:
 
 def best_classifier_experiment(train_samples: TrainSamples, test_samples: TestSamples):
     accuracies = []
-    for classifier_type, classifier_parameters in zip(EXPERIMENTS_PARAMS['classifiers'], EXPERIMENTS_PARAMS["parameters_for_classifiers"]):
-        classifier = classifier_type(classifier_parameters)
-        learning_algorithm = EXPERIMENTS_PARAMS["learning_algorithm_for_classifier_experiment"](classifier=classifier)  # TODO: during experiments, verify the parameters for init function
+    classifieres = [KNeighborsClassifier(3), RandomForestClassifier(1), LogisticRegression()]
+    for classifier in classifieres:
+        learning_algorithm = EXPERIMENTS_PARAMS["learning_algorithm_for_classifier_experiment"](classifier=classifier)
         accuracies.append(execute_generic_experiment(train_samples, test_samples, learning_algorithm))
 
     print_graph(GRAPHS_PARAMS["x_values_best_classifier"], accuracies, GRAPHS_PARAMS["x_label_best_classifier"], GRAPHS_PARAMS["y_label_best_classifier"])
+
+
+def run_time_experiment(train_samples: TrainSamples, test_samples: TestSamples):
+    run_times = []
+    features_cost = get_features_cost_in_order(train_samples.get_features_num())
+    for algorithm_type, algorithm_parameters in zip(EXPERIMENTS_PARAMS['learning_algorithms'],
+                                                    EXPERIMENTS_PARAMS['parameters_for_algorithms']):
+        start = time.time()
+        print(f'start {algorithm_type}')
+        learning_algorithm = algorithm_type(**algorithm_parameters)
+        execute_generic_experiment(train_samples, test_samples, learning_algorithm, features_cost)
+        end = time.time()
+        run_time = end - start
+        run_times.append(run_time)
+    print_graph(GRAPHS_PARAMS["x_values_run_times"], run_times, GRAPHS_PARAMS["x_label_run_times"],
+                GRAPHS_PARAMS["y_label_run_times"])
+
+
+def num_of_features_to_run_time(dataset_path : str):
+    for algorithm_type, algorithm_parameters in zip(EXPERIMENTS_PARAMS['learning_algorithms'],
+                                                    EXPERIMENTS_PARAMS['parameters_for_algorithms']):
+        run_times = []
+        for d in range(15, 60, 5):
+            train_samples, test_samples = get_dataset_with_num_of_features(d, dataset_path, class_index=EXPERIMENTS_PARAMS["class_index"],
+                                                      train_ratio=EXPERIMENTS_PARAMS["train_ratio"], random_seed=0,
+                                                      shuffle=True)
+            print(d)
+            features_cost = get_features_cost_in_order(train_samples.get_features_num())
+            start = time.time()
+            learning_algorithm = algorithm_type(**algorithm_parameters)
+            execute_generic_experiment(train_samples, test_samples, learning_algorithm, features_cost)
+            end = time.time()
+            run_time = end - start
+            run_times.append(run_time)
+        print_graph(GRAPHS_PARAMS["x_values_run_times_features_num"], run_times, GRAPHS_PARAMS["x_label_run_times_features_num"],
+                GRAPHS_PARAMS["y_label_run_times_features_num"])
 
 
 """"""""""""""""""""""""""""""""""""""""""" Main """""""""""""""""""""""""""""""""""""""""""
@@ -181,12 +250,14 @@ def best_classifier_experiment(train_samples: TrainSamples, test_samples: TestSa
 def execute_experiments():
     for dataset_path in EXPERIMENTS_PARAMS["datasets_path"]:
         train_samples, test_samples = get_dataset(dataset_path, class_index=EXPERIMENTS_PARAMS["class_index"],
-                                                  train_ratio=EXPERIMENTS_PARAMS["train_ratio"], random_seed=EXPERIMENTS_PARAMS["random_seed"], shuffle=True)
-        hyperparameter_for_score_function_experiment(train_samples)
+                                                  train_ratio=EXPERIMENTS_PARAMS["train_ratio"], random_seed=0, shuffle=True)
+        hyperparameter_for_score_function_experiment(dataset_path)
         score_function_experiment(train_samples, test_samples)
         best_algorithms_experiment(train_samples, test_samples)
         local_search_algorithm_experiment(train_samples, test_samples)
         best_classifier_experiment(train_samples, test_samples)
+        run_time_experiment(train_samples, test_samples)
+        num_of_features_to_run_time(dataset_path)
 
 
 if __name__ == '__main__':
