@@ -152,12 +152,13 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
         nodes = [frozenset(np.append(sub_set, given_features).astype(np.int)) for sub_set in powerset(get_complementary_set(range(total_features), given_features))]
         self._graph = nx.DiGraph()
         self._graph.add_nodes_from(nodes)
-        self._graph.add_weighted_edges_from(self._get_edges(nodes))
+        self._graph.add_weighted_edges_from(self._get_edges(nodes, given_features))
 
-    def _get_edges(self, nodes: list[Node]) -> list[tuple[Node, Node, float]]:
+    def _get_edges(self, nodes: list[Node], given_features: GivenFeatures) -> list[tuple[Node, Node, float]]:
         """
         Gets the edges of the graph and their weights.
         :param nodes: list of the nodes in the graph.
+        :param given_features: list of the indices of the chosen features.
         :return: tuple of the edges and their weights in form [source, target, weight].
         """
         edges = []
@@ -165,7 +166,8 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
             for target in range(source, len(nodes)):
                 missing_feature = get_complementary_set(nodes[target], nodes[source])
                 if len(missing_feature) == 1 and len(nodes[target]) - len(nodes[source]) == 1:
-                    weight = self._score_function(train_samples=self._train_samples,
+                    weight = len(get_complementary_set(nodes[source], given_features)) *\
+                             self._score_function(train_samples=self._train_samples,
                                                   given_features=list(nodes[source]),
                                                   new_feature=missing_feature.pop(),
                                                   costs_list=self._features_costs)
@@ -213,7 +215,8 @@ class GraphSearchAlgorithm(SequenceAlgorithm):
         :param node2: the target of the given edge.
         :return: costs of all the features that are not in node1 and node2.
         """
-        return sum(self._features_costs[feature] for feature in get_complementary_set(node2, node1))
+        heuristic_value = sum(self._features_costs[feature] for feature in get_complementary_set(node2, node1))
+        return 1 / heuristic_value if heuristic_value != 0 else 1
 
 
 class LocalSearchAlgorithm(SequenceAlgorithm):
