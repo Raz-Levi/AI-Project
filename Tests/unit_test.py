@@ -4,7 +4,7 @@ Automation Tests For The Project
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
 import unittest
-from tests_parameters import *
+from Tests.tests_parameters import *
 from networkx.algorithms.shortest_paths.astar import astar_path
 from networkx.algorithms.shortest_paths.generic import shortest_path
 from simpleai.search.local import hill_climbing
@@ -226,12 +226,6 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
             self.assertEqual(list(algorithm._graph.nodes)[0], frozenset(given_features))
             self.assertEqual(list(algorithm._graph.nodes)[-1], frozenset(range(TRAIN_SAMPLES_SMALL.get_features_num())))
 
-    def test_features_costs_heuristic(self):
-        algorithm = self._get_algorithm_instance(GraphSearchAlgorithm)
-        algorithm.fit(TRAIN_SAMPLES_SMALL, list(range(1, TRAIN_SAMPLES_SMALL.get_features_num() + 1)))
-        for tested_nodes in FEATURES_COST_HEURISTIC_EXPECTED:
-            self.assertEqual(algorithm._features_costs_heuristic(tested_nodes[0], tested_nodes[1]), tested_nodes[2])
-
     def test_buy_features(self):
         train_samples, _ = get_dataset(NUMERIC_SAMPLES_PATH, TRAIN_RATIO_BATCH[0])
         features_costs = get_features_cost_in_order(train_samples.get_features_num())
@@ -241,7 +235,7 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
             new_given_features = algorithm._buy_features(given_features[:], MAXIMAL_COST_HIGH)
             self.assertEqual(sorted(new_given_features), list(range(train_samples.get_features_num())))
         new_given_features = algorithm._buy_features(GIVEN_FEATURES_BATCH[0], MAXIMAL_COST_LOW)
-        self.assertEqual(new_given_features, GIVEN_FEATURES_FOR_SMALL_COST)
+        self.assertEqual(GIVEN_FEATURES_FOR_SMALL_COST, new_given_features)
 
     def test_graph_search_algorithm(self):
         simple_algorithm = self._get_algorithm_instance(GraphSearchAlgorithm)
