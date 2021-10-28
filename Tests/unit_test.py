@@ -13,7 +13,7 @@ from General.score import ScoreFunction, ScoreFunctionA, ScoreFunctionB
 from LearningAlgorithms.abstract_algorithm import LearningAlgorithm
 from LearningAlgorithms.naive_algorithm import EmptyAlgorithm, RandomAlgorithm, OptimalAlgorithm
 from LearningAlgorithms.mid_algorithm import MaxVarianceAlgorithm
-from LearningAlgorithms.graph_search_algorithm import GraphSearchAlgorithm, LocalSearchAlgorithm
+from LearningAlgorithms.local_search_algorithm import LocalSearchAlgorithm
 from LearningAlgorithms.genetic_algorithm import GeneticAlgorithm
 
 """"""""""""""""""""""""""""""""""""""""" Utils  """""""""""""""""""""""""""""""""""""""""
@@ -209,41 +209,10 @@ class TestScoreFunction(unittest.TestCase):
                                                             costs_list=FEATURES_COST_IN_ORDER))
 
 
-class TestGraphSearchAlgorithm(unittest.TestCase):
+class TestLocalSearchAlgorithm(unittest.TestCase):
     # tests functions
     def test_initialization(self):
-        self.assertTrue(self._test_initialization(GraphSearchAlgorithm))
         self.assertTrue(self._test_initialization(LocalSearchAlgorithm))
-
-    def test_build_graph(self):
-        algorithm = self._get_algorithm_instance(GraphSearchAlgorithm)
-        for given_features in GIVEN_FEATURES_BATCH:
-            features_costs = [i for i in range(len(get_complementary_set(range(TRAIN_SAMPLES_SMALL.get_features_num()), given_features)))]
-            algorithm.fit(TRAIN_SAMPLES_SMALL, features_costs)
-            algorithm._build_graph(total_features=TRAIN_SAMPLES_SMALL.get_features_num(), given_features=given_features)
-            self.assertEqual(list(algorithm._graph.nodes), EXPECTED_NODES[f'expected_nodes_{given_features}'])
-            self.assertEqual(list(algorithm._graph.edges), EXPECTED_NODES[f'expected_edges_{given_features}'])
-            self.assertEqual(list(algorithm._graph.nodes)[0], frozenset(given_features))
-            self.assertEqual(list(algorithm._graph.nodes)[-1], frozenset(range(TRAIN_SAMPLES_SMALL.get_features_num())))
-
-    def test_buy_features(self):
-        train_samples, _ = get_dataset(NUMERIC_SAMPLES_PATH, TRAIN_RATIO_BATCH[0])
-        features_costs = get_features_cost_in_order(train_samples.get_features_num())
-        algorithm = self._get_algorithm_instance(GraphSearchAlgorithm)
-        algorithm.fit(train_samples, features_costs)
-        for given_features in GIVEN_FEATURES_BATCH:
-            new_given_features = algorithm._buy_features(given_features[:], MAXIMAL_COST_HIGH)
-            self.assertEqual(sorted(new_given_features), list(range(train_samples.get_features_num())))
-        new_given_features = algorithm._buy_features(GIVEN_FEATURES_BATCH[0], MAXIMAL_COST_LOW)
-        self.assertEqual(GIVEN_FEATURES_FOR_SMALL_COST, new_given_features)
-
-    def test_graph_search_algorithm(self):
-        simple_algorithm = self._get_algorithm_instance(GraphSearchAlgorithm)
-        score_function_algorithm = self._get_algorithm_instance(GraphSearchAlgorithm, score_function_type=ScoreFunctionB)
-        dijkstra_algorithm = self._get_algorithm_instance(GraphSearchAlgorithm, search_algorithm=shortest_path)
-        self._full_classification_test(simple_algorithm)
-        self._full_classification_test(score_function_algorithm)
-        self._full_classification_test(dijkstra_algorithm)
 
     def test_get_best_state(self):
         for train_ratio in TRAIN_RATIO_BATCH:
@@ -276,10 +245,7 @@ class TestGraphSearchAlgorithm(unittest.TestCase):
                                 search_algorithm: nx.algorithms = astar_path, local_search_algorithm: Optional[Callable] = hill_climbing) -> Type[LearningAlgorithm]:
         score_function_type = self._get_simple_score_function() if score_function_type is None else score_function_type
         score_function = score_function_type(classifier=CLASSIFIER)
-        if algorithm_type == GraphSearchAlgorithm:
-            return GraphSearchAlgorithm(CLASSIFIER, search_algorithm, score_function)
-        else:
-            return LocalSearchAlgorithm(CLASSIFIER, local_search_algorithm, score_function)
+        return LocalSearchAlgorithm(CLASSIFIER, local_search_algorithm, score_function)
 
     @staticmethod
     def _get_depth_score_function():
