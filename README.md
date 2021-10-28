@@ -12,7 +12,7 @@ LearningAlgorithm/naive_algorithm.py: Module for naive algorithms
 
 LearningAlgorithm/mid_algorithm.py: Module for a partially sophisticated algorithm
 
-LearningAlgorithm/graph_search_algorithm.py: Module for search algorithms
+LearningAlgorithm/local_search_algorithm.py: Module for local search algorithm
 
 LearningAlgorithm/genetic_algorithm.py: Module for a search algorithm based on a genetic algorithm
 

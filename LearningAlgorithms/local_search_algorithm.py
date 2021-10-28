@@ -1,5 +1,5 @@
 """
-This module contains search algorithms.
+This module contains local search algorithm.
 """
 
 """"""""""""""""""""""""""""""""""""""""""" Imports """""""""""""""""""""""""""""""""""""""""""
