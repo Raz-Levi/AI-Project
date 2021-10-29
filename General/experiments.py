@@ -89,7 +89,7 @@ GRAPHS_PARAMS = dict(
     y_label_score_function_run_times="Run Time",
 
     # best_algorithms_experiment
-    x_values_best_algorithm=["Empty", "Random", "Optimal", "MaxVariance", "Graph", "Local", "Genetic"],
+    x_values_best_algorithm=["Empty", "Random", "Optimal", "MaxVariance", "Local", "Genetic"],
     x_label_best_algorithm="Algorithm",
     y_label_best_algorithm="Accuracy",
 
