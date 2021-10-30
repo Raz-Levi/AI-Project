@@ -29,7 +29,6 @@ GIVEN_FEATURES = [0, 1, 2]
 GIVEN_FEATURES_FOR_SCORE_TEST_ALPHA_ONE = [2]
 GIVEN_FEATURES_FOR_SCORE_TEST_ALPHA_TWO = [0, 2]
 GIVEN_FEATURES_MISSED = [0, 1]
-GIVEN_FEATURES_FOR_SMALL_COST = [0, 1, 2, 3]
 GIVEN_FEATURES_BATCH = [[0], [3], [2, 3]]
 FEATURES_COST_IN_ORDER = [1, 2, 3]
 FEATURES_COST_LARGE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 22, 23]
@@ -57,6 +56,8 @@ ALPHA_TWO = 2
 A_ALPHA_TWO_RESULT = 21
 B_ALPHA_TWO_RESULT = 1/3
 
+# Local Search
+BEST_STATE_EXPECTED = [0, 1, 2, 3, 4, 5]
 
 # Expected dataset
 NUMERIC_SAMPLES_EXPECTED = np.array([[1, 0.11, 0.05, 78, 32, 12, 4231],
@@ -75,41 +76,3 @@ STRING_SAMPLES_EXPECTED = np.array([[0.2, 0., 0.05, 0., 0., 0., 0.9, 0, 0, 3],
 FEW_REAL_SAMPLES_EXPECTED = np.array([[0, 0, 0, 13, 0, 0, 460, 3, 4, 0],
                                       [1, 0, 1, 25, 1, 1, 235, 3, 2, 0],
                                       [2, 1, 0, 26, 1, 1, 1142, 2, 2, 1]])
-
-# Expected graph
-FEATURES_COST_HEURISTIC_EXPECTED = [(frozenset({0}), frozenset({0}), 0), (frozenset({0}), frozenset({0, 1}), 2),
-                                    (frozenset({0}), frozenset({0, 2}), 3), (frozenset({0}), frozenset({0, 3}), 4),
-                                    (frozenset({0}), frozenset({0, 1, 2, 3}), 9), (frozenset({1}), frozenset({1}), 0),
-                                    (frozenset({0, 1, 2}), frozenset({0, 1, 2, 3}), 4)]
-
-BEST_STATE_EXPECTED = [0, 1, 2, 3, 4, 5]
-
-EXPECTED_NODES = {
-    "expected_nodes_[0]": [frozenset({0.0}), frozenset({0, 1}), frozenset({0, 2}), frozenset({0, 3}),
-                           frozenset({0, 1, 2}), frozenset({0, 1, 3}), frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})],
-
-    "expected_edges_[0]": [(frozenset({0.0}), frozenset({0, 1})), (frozenset({0.0}), frozenset({0, 2})),
-                           (frozenset({0.0}), frozenset({0, 3})), (frozenset({0, 1}), frozenset({0, 1, 2})),
-                           (frozenset({0, 1}), frozenset({0, 1, 3})), (frozenset({0, 2}), frozenset({0, 1, 2})),
-                           (frozenset({0, 2}), frozenset({0, 2, 3})), (frozenset({0, 3}), frozenset({0, 1, 3})),
-                           (frozenset({0, 3}), frozenset({0, 2, 3})), (frozenset({0, 1, 2}), frozenset({0, 1, 2, 3})),
-                           (frozenset({0, 1, 3}), frozenset({0, 1, 2, 3})), (frozenset({0, 2, 3}), frozenset({0, 1, 2, 3}))],
-
-    "expected_nodes_[3]": [frozenset({3.0}), frozenset({0, 3}), frozenset({1, 3}), frozenset({2, 3}),
-                           frozenset({0, 1, 3}), frozenset({0, 2, 3}), frozenset({1, 2, 3}), frozenset({0, 1, 2, 3})],
-
-    "expected_edges_[3]": [(frozenset({3.0}), frozenset({0, 3})), (frozenset({3.0}), frozenset({1, 3})),
-                           (frozenset({3.0}), frozenset({2, 3})), (frozenset({0, 3}), frozenset({0, 1, 3})),
-                           (frozenset({0, 3}), frozenset({0, 2, 3})),
-                           (frozenset({1, 3}), frozenset({0, 1, 3})), (frozenset({1, 3}), frozenset({1, 2, 3})),
-                           (frozenset({2, 3}), frozenset({0, 2, 3})), (frozenset({2, 3}), frozenset({1, 2, 3})),
-                           (frozenset({0, 1, 3}), frozenset({0, 1, 2, 3})),
-                           (frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})),
-                           (frozenset({1, 2, 3}), frozenset({0, 1, 2, 3}))],
-
-    "expected_nodes_[2, 3]": [frozenset({2.0, 3.0}), frozenset({0, 2, 3}), frozenset({1, 2, 3}), frozenset({0, 1, 2, 3})],
-
-    "expected_edges_[2, 3]": [(frozenset({2.0, 3.0}), frozenset({0, 2, 3})), (frozenset({2.0, 3.0}), frozenset({1, 2, 3})),
-                              (frozenset({0, 2, 3}), frozenset({0, 1, 2, 3})), (frozenset({1, 2, 3}), frozenset({0, 1, 2, 3}))],
-
-}
